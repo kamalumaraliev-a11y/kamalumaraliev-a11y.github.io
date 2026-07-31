@@ -137,6 +137,34 @@
   .meta.late{color:var(--dawn)}
   .rowbtn{flex:none; color:#5C5487; font-size:17px; line-height:1; padding:3px 5px; border-radius:6px}
   .rowbtn:hover{color:var(--dawn); background:rgba(255,158,74,.1)}
+  .rowbtn.more{font-size:19px; padding:4px 9px; letter-spacing:.06em}
+  .starmark{flex:none; color:var(--dawn); font-size:13px; margin-top:3px}
+  @keyframes ping{0%{background:rgba(79,209,165,.28)} 100%{background:var(--slab)}}
+  .item.pinged{animation:ping .7s ease-out}
+
+  /* bottom action sheet */
+  .scrim.bottom{align-items:flex-end; padding:0}
+  .menu{width:100%; max-width:520px; margin:0 auto; background:var(--slab); border:1px solid var(--line);
+    border-radius:20px 20px 0 0; padding:8px 8px calc(14px + env(safe-area-inset-bottom));
+    animation:slideup .2s ease-out}
+  @keyframes slideup{from{transform:translateY(24px); opacity:0} to{transform:translateY(0); opacity:1}}
+  .menutitle{font-size:14px; color:var(--mute); padding:14px 14px 10px; border-bottom:1px solid var(--line);
+    margin-bottom:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .mrow{display:block; width:100%; text-align:left; padding:15px 14px; border-radius:12px; font-size:16px}
+  .mrow:hover{background:var(--slab-2)}
+  .mrow.danger{color:#FF8A8A}
+  .mrow.cancel{text-align:center; color:var(--mute); margin-top:4px; border-top:1px solid var(--line); border-radius:0}
+
+  /* week card */
+  .weekcard{border:1px solid var(--line); border-radius:16px; padding:15px; margin-bottom:14px;
+    background:linear-gradient(160deg, var(--slab-2), var(--slab))}
+  .weekline{font-family:var(--display); font-weight:800; font-size:22px; margin:7px 0 12px; letter-spacing:-.01em}
+  .weekline b{color:var(--dawn)}
+  .weekdots{display:flex; gap:6px}
+  .wd{flex:1; height:8px; border-radius:99px; background:var(--slab-2); box-shadow:inset 0 0 0 1px var(--line)}
+  .wd.part{background:rgba(255,158,74,.35); box-shadow:none}
+  .wd.hit{background:var(--dawn); box-shadow:none}
+  .weeknote{font-size:14px; line-height:1.5; color:#D9D0EE; margin:12px 0 0}
   .empty{border:1px dashed var(--line); border-radius:12px; padding:20px 16px; text-align:center; color:var(--mute); font-size:14px}
 
   /* ---------- goals ---------- */
@@ -203,7 +231,25 @@
   .solid{background:var(--dawn); color:#231402}
   .toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:var(--slab-2);
     border:1px solid var(--line); color:var(--noon); padding:11px 17px; border-radius:99px; font-size:14px; z-index:50;
-    box-shadow:0 10px 34px rgba(0,0,0,.5)}
+    box-shadow:0 10px 34px rgba(0,0,0,.5); display:flex; align-items:center; gap:12px; max-width:90vw}
+  .toast .undo{font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--dawn); border:1px solid rgba(255,158,74,.4); border-radius:99px; padding:5px 11px; flex:none}
+  .topright{display:flex; align-items:center; gap:8px}
+  .gear{font-size:17px; color:var(--mute); padding:5px 8px; border-radius:9px; line-height:1}
+  .gear:hover{color:var(--noon); background:var(--slab)}
+  .dayset{display:flex; gap:5px; flex-wrap:wrap}
+  .dchip{flex:1 1 auto; min-width:42px; border:1px solid var(--line); background:var(--slab); border-radius:9px;
+    padding:9px 4px; font-size:12.5px; color:var(--mute)}
+  .dchip[aria-pressed="true"]{border-color:var(--dawn); color:var(--dawn); background:rgba(255,158,74,.12)}
+  .bigin{width:100%; background:var(--ink); border:1px solid var(--line); color:var(--noon); border-radius:10px;
+    padding:12px 13px; font-size:16px; margin-top:8px}
+  .bigin:focus{outline:2px solid var(--dusk)}
+  .sheet .fieldrow{display:flex; gap:8px; margin-top:12px}
+  .sheet input[type=date], .sheet input[type=time], .sheet select{width:100%; background:var(--ink);
+    border:1px solid var(--line); color:var(--noon); border-radius:10px; padding:11px; font-size:15px}
+  .setnote{font-size:13.5px; line-height:1.5; color:#D9D0EE; margin:8px 0 0}
+  .item.offduty{opacity:.5}
+  .item.offduty .txt{text-decoration:none}
   @keyframes pop{from{opacity:0; transform:translate(-50%,10px)} to{opacity:1; transform:translate(-50%,0)}}
   .toast{animation:pop .22s ease-out}
   @keyframes rise{from{opacity:0; transform:translateY(9px)} to{opacity:1; transform:translateY(0)}}
@@ -228,7 +274,8 @@
 <div id="app">
   <div class="top">
     <div class="wordmark">MOMEN<span>TUM</span></div>
-    <div class="streak" id="streak">—</div>
+    <div class="topright"><button class="gear" id="gear" aria-label="Settings">⚙</button>
+    <div class="streak" id="streak">—</div></div>
   </div>
   <div class="mono" id="datestr">—</div>
 
@@ -282,9 +329,14 @@
     lastActive:null, briefSeen:{}, totalDone:0, bestStreak:0
   };
 
-  function todayKey(d){ d = d || new Date();
+  var DAY_START = 4; // the day rolls over at 4am, not midnight
+  function fmtKey(d){
     return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
-  function shiftKey(base, days){ var d = new Date(base+"T12:00:00"); d.setDate(d.getDate()+days); return todayKey(d); }
+  function todayKey(d){
+    var x = d ? new Date(d.getTime()) : new Date();
+    x.setHours(x.getHours() - DAY_START);
+    return fmtKey(x); }
+  function shiftKey(base, days){ var d = new Date(base+"T12:00:00"); d.setDate(d.getDate()+days); return fmtKey(d); }
   function daysBetween(a,b){ return Math.round((new Date(b+"T12:00:00") - new Date(a+"T12:00:00"))/86400000); }
   function uid(){ return Math.random().toString(36).slice(2,9); }
 
@@ -377,14 +429,27 @@
     var total = 0, done = 0;
     state.habits.forEach(function(h){
       if(h.createdDay && h.createdDay > key) return;
+      if(!habitDueOn(h, key)) return;
       total++; if(h.log && h.log[key]) done++;
     });
     t.forEach(function(x){ total++; if(x.done && x.doneDay === key) done++; });
     return { total: total, done: done, rate: total ? done/total : 0 };
   }
+  var DAYNAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  function dowOf(key){ return new Date(key+"T12:00:00").getDay(); }
+  function habitDueOn(x, key){
+    if(!x.days || !x.days.length) return true;      // no days chosen = every day
+    return x.days.indexOf(dowOf(key)) !== -1;
+  }
+  function habitsDueToday(){ return state.habits.filter(function(x){ return habitDueOn(x, TODAY); }); }
+  function habitDaysLabel(x){
+    if(!x.days || !x.days.length || x.days.length === 7) return "";
+    return x.days.slice().sort().map(function(n){ return DAYNAMES[n]; }).join(" ");
+  }
+
   function todayStats(){
     var total = 0, done = 0;
-    state.habits.forEach(function(h){ total++; if(h.log && h.log[TODAY]) done++; });
+    habitsDueToday().forEach(function(h){ total++; if(h.log && h.log[TODAY]) done++; });
     openTasks().concat(doneToday()).forEach(function(x){ total++; if(x.done) done++; });
     return { total: total, done: done, rate: total ? done/total : 0 };
   }
@@ -424,6 +489,7 @@
   }
   function dayT(date){
     var h = date.getHours() + date.getMinutes()/60;
+    if(h < DAY_START) h += 24;           // 1am reads as the end of the night, not the start
     return Math.min(1, Math.max(0, (h - 6) / 18));
   }
   function drawArc(){
@@ -497,7 +563,7 @@
         '<div class="mono">Morning brief · ' + new Date().toLocaleDateString(undefined,{month:"short",day:"numeric"}) + '</div>' +
         '<h2>' + (state.name ? "Morning, " + esc(state.name) + "." : "Here\'s the day.") + '</h2>' +
         '<p>' + body + '</p>' +
-        (one ? '<div class="focusline"><b>One thing</b> ' + esc(one) + '</div>'
+        (one ? '<div class="focusline"><b>One thing</b> <span style="flex:1">' + esc(one) + '</span><button class="rowbtn" id="rethink">✎</button></div>'
              : '<div class="onething"><input id="onein" placeholder="If only one thing gets done today, it\'s…" maxlength="90">' +
                '<button class="add" id="onebtn">Set</button></div>') +
         '<div class="quote">' + pick(LINES.morning, TODAY) + '</div>' +
@@ -582,16 +648,16 @@
 
   /* ---------------- render: views ---------------- */
   var tab = "today";
-  var draft = { when:"today", goal:"", span:"week", date:"", time:"" };
+  var draft = { when:"today", goal:"", span:"week", date:"", time:"", days:[] };
   var CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="#141126" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>';
 
   function itemHTML(o){
-    return '<div class="item ' + (o.done?"done ":"") + (o.star?"star ":"") + '">' +
+    return '<div class="item ' + (o.done?"done ":"") + (o.star?"star ":"") + (justDone===o.id?"pinged ":"") + '">' +
       '<button class="box" data-toggle="' + o.id + '" data-kind="' + o.kind + '" aria-label="Mark done">' + CHECK + '</button>' +
       '<div class="txt" data-toggle="' + o.id + '" data-kind="' + o.kind + '" style="cursor:pointer">' +
         esc(o.title) + (o.meta ? '<span class="meta ' + (o.lateFlag?"late":"") + '">' + o.meta + '</span>' : '') + '</div>' +
-      (o.kind==="task" ? '<button class="rowbtn" data-star="' + o.id + '" aria-label="Prioritise">' + (o.star?"★":"☆") + '</button>' : '') +
-      '<button class="rowbtn" data-del="' + o.id + '" data-kind="' + o.kind + '" aria-label="Delete">×</button>' +
+      (o.star ? '<span class="starmark" aria-label="Priority">★</span>' : '') +
+      '<button class="rowbtn more" data-more="' + o.id + '" data-kind="' + o.kind + '" aria-label="More">⋯</button>' +
     '</div>';
   }
   function head(label, count){
@@ -626,7 +692,12 @@
       (draft.when === "pick"
         ? '<input type="date" id="pickdate" value="' + (draft.date || shiftKey(TODAY,1)) + '" min="' + TODAY + '">'
         : '') +
-      (draft.when === "habit" ? '' :
+      (draft.when === "habit"
+        ? '<div class="fieldrow"><div class="fl" style="flex:1 1 100%"><span>Which days? (none = every day)</span>' +
+          '<div class="dayset">' + DAYNAMES.map(function(n,i){
+            return '<button class="dchip" data-dow="'+i+'" aria-pressed="'+(draft.days.indexOf(i)!==-1)+'">'+n+'</button>';
+          }).join('') + '</div></div></div>'
+        :
         '<div class="fieldrow">' +
           '<label class="fl"><span>At a set time?</span>' +
           '<input type="time" id="picktime" value="' + (draft.time || "") + '"></label>' +
@@ -637,14 +708,25 @@
         '</div>') +
       '<button class="add" id="addbtn">Add task</button></div>';
 
-    var habits = state.habits;
+    var habits = habitsDueToday();
     if(habits.length){
       var hd = habits.filter(function(x){ return x.log && x.log[TODAY]; }).length;
-      h += '<div class="sec">' + head("Every day", hd + "/" + habits.length) +
+      h += '<div class="sec">' + head("Repeating", hd + "/" + habits.length) +
         habits.map(function(x){
-          var run = habitRun(x);
+          var run = habitRun(x), bits = [];
+          if(habitDaysLabel(x)) bits.push(habitDaysLabel(x));
+          if(run > 1) bits.push(run + " in a row");
           return itemHTML({ id:x.id, kind:"habit", title:x.title, done:!!(x.log && x.log[TODAY]), star:false,
-            meta: run > 1 ? run + " days in a row" : "" });
+            meta: bits.join(" · ") });
+        }).join("") + '</div>';
+    }
+    var offDuty = state.habits.filter(function(x){ return !habitDueOn(x, TODAY); });
+    if(offDuty.length){
+      h += '<div class="sec">' + head("Not scheduled today", offDuty.length) +
+        offDuty.map(function(x){
+          return '<div class="item offduty"><div class="box" style="opacity:.3"></div>' +
+            '<div class="txt">' + esc(x.title) + '<span class="meta">' + habitDaysLabel(x) + '</span></div>' +
+            '<button class="rowbtn" data-edit="' + x.id + '" data-kind="habit">✎</button></div>';
         }).join("") + '</div>';
     }
 
@@ -711,9 +793,13 @@
     return bits.join(" · ");
   }
   function habitRun(x){
-    var n = 0, k = TODAY;
+    var n = 0, k = TODAY, guard = 0;
     if(!(x.log && x.log[TODAY])) k = shiftKey(TODAY, -1);
-    while(x.log && x.log[k]){ n++; k = shiftKey(k, -1); }
+    while(guard++ < 400){
+      if(!habitDueOn(x, k)){ k = shiftKey(k, -1); continue; }   // skip days it wasn't scheduled
+      if(!(x.log && x.log[k])) break;
+      n++; k = shiftKey(k, -1);
+    }
     return n;
   }
 
@@ -831,7 +917,30 @@
     if(st > (state.bestStreak||0)){ state.bestStreak = st; save(); }
     var hit = days.filter(function(d){ return qualifies(d.s); }).length;
 
-    var h = '<div class="stats">' +
+    var wk = [], wkey = shiftKey(TODAY, -6), wdone = 0, wsolid = 0, best = {n:-1, key:null};
+    for(var wi=0; wi<7; wi++){
+      var ws = wkey === TODAY ? todayStats() : (state.history[wkey] || {done:0,total:0,rate:0});
+      wdone += ws.done || 0;
+      if(qualifies(ws)) wsolid++;
+      if((ws.done||0) > best.n) best = {n: ws.done||0, key: wkey};
+      wk.push({key:wkey, s:ws});
+      wkey = shiftKey(wkey, 1);
+    }
+    var h = '<div class="weekcard">' +
+      '<div class="mono">Last seven days</div>' +
+      '<div class="weekline"><b>' + wdone + '</b> cleared · <b>' + wsolid + '</b> solid ' + (wsolid===1?"day":"days") + '</div>' +
+      '<div class="weekdots">' + wk.map(function(x){
+        return '<span class="wd' + (qualifies(x.s) ? " hit" : (x.s.done ? " part" : "")) + '" title="' + x.key + '"></span>';
+      }).join("") + '</div>' +
+      '<p class="weeknote">' + (
+        wsolid >= 5 ? "Five or more solid days in a week is the whole game. Don't get clever, just repeat it." :
+        wsolid >= 3 ? "More on than off. Push one more day over the line next week." :
+        wsolid >= 1 ? "It's started. The gap between one solid day and three is smaller than it looks." :
+        wdone > 0   ? "Things are getting done, but no day cleared the bar yet. Try a shorter list." :
+                      "Nothing logged this week. One item today puts you back on the board."
+      ) + '</p></div>';
+
+    h += '<div class="stats">' +
       '<div class="stat"><div class="mono">Current run</div><b>' + st + '</b><div class="mono">' + (st===1?"day":"days") + ' in a row</div></div>' +
       '<div class="stat"><div class="mono">Best run</div><b>' + (state.bestStreak||0) + '</b><div class="mono">days</div></div>' +
       '<div class="stat"><div class="mono">Cleared all time</div><b>' + totalAll + '</b><div class="mono">items</div></div>' +
@@ -873,6 +982,15 @@
     setTimeout(function(){ t.remove(); }, 2600);
   }
   var CHEERS = ["Logged.","That's one.","Down it goes.","Counted.","Good.","Chalk it up.","Cleared."];
+  function undoToast(msg, fn){
+    document.querySelectorAll(".toast").forEach(function(n){ n.remove(); });
+    var t = document.createElement("div");
+    t.className = "toast";
+    t.innerHTML = '<span>' + esc(msg) + '</span><button class="undo">Undo</button>';
+    document.body.appendChild(t);
+    var timer = setTimeout(function(){ t.remove(); }, 7000);
+    t.querySelector(".undo").onclick = function(){ clearTimeout(timer); t.remove(); fn(); };
+  }
 
   function addTask(){
     var el = document.getElementById("newtask");
@@ -887,8 +1005,9 @@
     var tf = document.getElementById("picktime");
     var time = tf ? tf.value : "";
     if(draft.when === "habit"){
-      state.habits.push({ id:uid(), title:v, log:{}, logAt:{}, createdDay:TODAY });
-      toast("Added to your daily habits.");
+      state.habits.push({ id:uid(), title:v, log:{}, logAt:{}, days:draft.days.slice(), createdDay:TODAY });
+      toast(draft.days.length ? "Repeats " + draft.days.slice().sort().map(function(n){ return DAYNAMES[n]; }).join(" ") + "."
+                              : "Repeats every day.");
     } else {
       var when = TODAY;
       if(draft.when === "tomorrow") when = shiftKey(TODAY, 1);
@@ -914,19 +1033,20 @@
       if(!hb) return;
       hb.log = hb.log || {}; hb.logAt = hb.logAt || {};
       if(hb.log[TODAY]){ delete hb.log[TODAY]; delete hb.logAt[TODAY]; }
-      else { hb.log[TODAY] = 1; hb.logAt[TODAY] = Date.now(); toast(pick(CHEERS, id + Date.now())); }
+      else { hb.log[TODAY] = 1; hb.logAt[TODAY] = Date.now(); justDone = id; toast(pick(CHEERS, id + Date.now())); }
     } else {
       var t = state.tasks.find(function(x){ return x.id===id; });
       if(!t) return;
       t.done = !t.done;
-      if(t.done){ t.doneAt = Date.now(); t.doneDay = TODAY; toast(pick(CHEERS, id + Date.now())); }
+      if(t.done){ t.doneAt = Date.now(); t.doneDay = TODAY; justDone = id; toast(pick(CHEERS, id + Date.now())); }
       else { delete t.doneAt; delete t.doneDay; }
     }
     save(); render();
+    if(justDone) setTimeout(function(){ justDone = null; }, 700);
   }
 
   document.addEventListener("click", function(e){
-    var el = e.target.closest("[data-toggle],[data-del],[data-star],[data-when],[data-span],[data-day],[role='tab'],[data-delgoal],#addbtn,#goalbtn,#onebtn,#namebtn,#endday,#copyday,#moredays,#backup,#restore,#tstart,#treset,#asknudge,#testnudge");
+    var el = e.target.closest("[data-toggle],[data-del],[data-star],[data-when],[data-span],[data-dow],[data-day],[data-edit],[data-more],[role='tab'],[data-delgoal],#addbtn,#goalbtn,#onebtn,#namebtn,#endday,#copyday,#moredays,#backup,#restore,#gear,#rethink,#tstart,#treset,#asknudge,#testnudge");
     if(!el) return;
     var d = el.dataset;
 
@@ -938,10 +1058,17 @@
       return;
     }
     if(d.del){
-      if(d.kind === "habit") state.habits = state.habits.filter(function(x){ return x.id !== d.del; });
-      else state.tasks = state.tasks.filter(function(x){ return x.id !== d.del; });
-      save(); render(); return;
+      var gone, where = d.kind === "habit" ? "habits" : "tasks";
+      state[where].forEach(function(x){ if(x.id === d.del) gone = x; });
+      state[where] = state[where].filter(function(x){ return x.id !== d.del; });
+      save(); render();
+      if(gone) undoToast("Deleted \u201c" + (gone.title.length > 24 ? gone.title.slice(0,24) + "\u2026" : gone.title) + "\u201d", function(){
+        state[where].push(gone); save(); render(); toast("Back.");
+      });
+      return;
     }
+    if(d.edit){ openEditor(d.edit, d.kind); return; }
+    if(d.more){ openRowMenu(d.more, d.kind); return; }
     if(d.delgoal){
       state.goals = state.goals.filter(function(g){ return g.id !== d.delgoal; });
       state.tasks.forEach(function(t){ if(t.goalId === d.delgoal) t.goalId = ""; });
@@ -965,6 +1092,11 @@
       toast("Goal set."); save(); render(); return;
     }
     if(d.span){ draft.span = d.span; render(); return; }
+    if(d.dow){
+      var n = +d.dow, i = draft.days.indexOf(n);
+      if(i === -1) draft.days.push(n); else draft.days.splice(i,1);
+      render(); return;
+    }
     if(el.id === "namebtn"){
       var nm = document.getElementById("namein");
       state.name = (nm ? nm.value.trim() : "").slice(0,24);
@@ -981,6 +1113,8 @@
     if(el.id === "copyday"){ copyDay(); return; }
     if(d.day){ openDay = (openDay === d.day) ? null : d.day; render(); return; }
     if(el.id === "moredays"){ histLimit += 30; render(); return; }
+    if(el.id === "gear"){ openSettings(); return; }
+    if(el.id === "rethink"){ delete state.oneThing[TODAY]; save(); render(); return; }
     if(el.id === "backup"){ doBackup(); return; }
     if(el.id === "restore"){ doRestore(); return; }
     if(el.id === "tstart"){ timerToggle(); return; }
@@ -1088,6 +1222,132 @@
     ta.value = text; ta.select();
     wrap.querySelector("#dclose").onclick = function(){ wrap.remove(); };
     wrap.addEventListener("click", function(ev){ if(ev.target === wrap) wrap.remove(); });
+  }
+
+  var justDone = null;
+
+  function openRowMenu(id, kind){
+    var isHabit = kind === "habit";
+    var o = (isHabit ? state.habits : state.tasks).filter(function(x){ return x.id === id; })[0];
+    if(!o) return;
+    var wrap = document.createElement("div");
+    wrap.className = "scrim bottom";
+    wrap.innerHTML = '<div class="menu">' +
+      '<div class="menutitle">' + esc(o.title) + '</div>' +
+      (isHabit ? '' :
+        '<button class="mrow" data-act="star">' + (o.star ? "☆ Remove priority" : "★ Make it the priority") + '</button>' +
+        (o.done ? '' : '<button class="mrow" data-act="push">→ Push to tomorrow</button>') +
+        (o.date !== TODAY && !o.done ? '<button class="mrow" data-act="pull">↓ Pull into today</button>' : '')) +
+      '<button class="mrow" data-act="edit">✎ Edit</button>' +
+      '<button class="mrow danger" data-act="del">× Delete</button>' +
+      '<button class="mrow cancel" data-act="close">Cancel</button>' +
+    '</div>';
+    document.body.appendChild(wrap);
+    wrap.addEventListener("click", function(ev){
+      if(ev.target === wrap) return wrap.remove();
+      var b = ev.target.closest("[data-act]"); if(!b) return;
+      var act = b.dataset.act;
+      wrap.remove();
+      if(act === "close") return;
+      if(act === "edit") return openEditor(id, kind);
+      if(act === "star"){ o.star = !o.star; save(); render(); return; }
+      if(act === "push"){
+        var from = o.date;
+        o.date = shiftKey(TODAY, 1); save(); render();
+        undoToast("Pushed to tomorrow", function(){ o.date = from; save(); render(); });
+        return;
+      }
+      if(act === "pull"){
+        var was = o.date;
+        o.date = TODAY; save(); render();
+        undoToast("Pulled into today", function(){ o.date = was; save(); render(); });
+        return;
+      }
+      if(act === "del"){
+        var where = isHabit ? "habits" : "tasks";
+        state[where] = state[where].filter(function(x){ return x.id !== id; });
+        save(); render();
+        undoToast("Deleted \u201c" + (o.title.length > 22 ? o.title.slice(0,22) + "\u2026" : o.title) + "\u201d", function(){
+          state[where].push(o); save(); render(); toast("Back.");
+        });
+      }
+    });
+  }
+
+  function openEditor(id, kind){
+    var isHabit = kind === "habit";
+    var o = (isHabit ? state.habits : state.tasks).filter(function(x){ return x.id === id; })[0];
+    if(!o) return;
+    var days = (o.days || []).slice();
+    var wrap = document.createElement("div");
+    wrap.className = "scrim";
+    wrap.innerHTML = '<div class="sheet">' +
+      '<div class="mono">Edit ' + (isHabit ? "repeating task" : "task") + '</div>' +
+      '<input type="text" id="etitle" class="bigin" maxlength="140">' +
+      (isHabit
+        ? '<div class="fl" style="margin-top:12px"><span>Which days? (none = every day)</span>' +
+          '<div class="dayset" id="edays">' + DAYNAMES.map(function(n,i){
+            return '<button class="dchip" data-eday="'+i+'" aria-pressed="'+(days.indexOf(i)!==-1)+'">'+n+'</button>';
+          }).join('') + '</div></div>'
+        : '<div class="fieldrow" style="margin-top:12px">' +
+            '<label class="fl"><span>Date</span><input type="date" id="edate" value="' + o.date + '"></label>' +
+            '<label class="fl"><span>Time</span><input type="time" id="etime" value="' + (o.time || "") + '"></label>' +
+          '</div>' +
+          (state.goals.length ? '<label class="fl" style="margin-top:10px"><span>Goal</span><select id="egoal">' +
+            '<option value="">Not linked</option>' +
+            state.goals.map(function(g){ return '<option value="'+g.id+'"'+(o.goalId===g.id?" selected":"")+'>'+esc(g.title)+'</option>'; }).join("") +
+            '</select></label>' : '')) +
+      '<div class="sheetbtns"><button class="ghost" id="ecancel">Cancel</button>' +
+      '<button class="solid" id="esave">Save changes</button></div></div>';
+    document.body.appendChild(wrap);
+    var ti = wrap.querySelector("#etitle");
+    ti.value = o.title; ti.focus();
+    wrap.querySelector("#ecancel").onclick = function(){ wrap.remove(); };
+    wrap.addEventListener("click", function(ev){ if(ev.target === wrap) wrap.remove(); });
+    var ed = wrap.querySelector("#edays");
+    if(ed) ed.addEventListener("click", function(ev){
+      var b = ev.target.closest("[data-eday]"); if(!b) return;
+      var n = +b.dataset.eday, i = days.indexOf(n);
+      if(i === -1) days.push(n); else days.splice(i,1);
+      b.setAttribute("aria-pressed", String(days.indexOf(n) !== -1));
+    });
+    wrap.querySelector("#esave").onclick = function(){
+      var v = ti.value.trim();
+      if(!v){ ti.classList.add("nudgeme"); return; }
+      o.title = v;
+      if(isHabit){ o.days = days.slice(); }
+      else {
+        var dEl = wrap.querySelector("#edate"), tEl = wrap.querySelector("#etime"), gEl = wrap.querySelector("#egoal");
+        if(dEl && dEl.value) o.date = dEl.value;
+        o.time = tEl ? tEl.value : "";
+        if(gEl) o.goalId = gEl.value;
+      }
+      save(); wrap.remove(); render(); toast("Updated.");
+    };
+  }
+
+  function openSettings(){
+    var wrap = document.createElement("div");
+    wrap.className = "scrim";
+    wrap.innerHTML = '<div class="sheet">' +
+      '<div class="mono">Settings</div>' +
+      '<label class="fl" style="margin-top:12px"><span>What should Momentum call you?</span>' +
+      '<input type="text" id="sname" class="bigin" maxlength="24"></label>' +
+      '<div class="mono" style="margin-top:18px">How this works</div>' +
+      '<p class="setnote">Your day rolls over at <b>4am</b>, not midnight — a late night still counts as the same day.</p>' +
+      '<p class="setnote">A day counts toward your streak when you clear at least one thing <b>and</b> finish 60% of what was on the board. An empty board doesn\'t count.</p>' +
+      '<p class="setnote">Everything is stored in this browser only. Back it up from the Momentum tab now and then.</p>' +
+      '<div class="sheetbtns"><button class="ghost" id="scancel">Cancel</button>' +
+      '<button class="solid" id="ssave">Save</button></div></div>';
+    document.body.appendChild(wrap);
+    var ni = wrap.querySelector("#sname");
+    ni.value = state.name || ""; ni.focus();
+    wrap.querySelector("#scancel").onclick = function(){ wrap.remove(); };
+    wrap.addEventListener("click", function(ev){ if(ev.target === wrap) wrap.remove(); });
+    wrap.querySelector("#ssave").onclick = function(){
+      state.name = ni.value.trim().slice(0,24);
+      save(); wrap.remove(); render(); toast("Saved.");
+    };
   }
 
   /* ---------------- recap sheet ---------------- */
