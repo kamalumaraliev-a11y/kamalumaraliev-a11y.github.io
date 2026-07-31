@@ -1,0 +1,9 @@
+{
+  "name": "Momentum",
+  "short_name": "Momentum",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#141126",
+  "theme_color": "#141126"
+}
