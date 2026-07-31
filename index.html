@@ -96,7 +96,21 @@
     border-radius:12px; padding:13px 14px}
   .composer input[type=text]:focus{outline:2px solid var(--dusk); outline-offset:0; border-color:transparent}
   .composer select{background:var(--slab); border:1px solid var(--line); color:var(--mute); border-radius:10px; padding:9px 10px; font-size:13px}
-  .chipset{display:flex; gap:6px}
+  .chipset{display:flex; gap:6px; flex-wrap:wrap}
+  .clabel{flex:1 1 100%; font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--mute); margin-bottom:-2px}
+  .composer input[type=date], .composer input[type=time]{background:var(--slab); border:1px solid var(--line);
+    color:var(--noon); border-radius:10px; padding:10px 12px; font-size:15px; min-height:44px}
+  .composer input[type=date]{flex:1 1 100%}
+  .fieldrow{flex:1 1 100%; display:flex; gap:8px; flex-wrap:wrap}
+  .fl{flex:1 1 140px; display:flex; flex-direction:column; gap:5px}
+  .fl span{font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--mute)}
+  .fl select, .fl input{width:100%}
+  @keyframes shake{0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)}}
+  .nudgeme{animation:shake .28s ease-in-out; border-color:var(--dawn) !important}
+  .copyday{width:100%; border:1px dashed var(--line); border-radius:12px; padding:13px; margin-top:8px;
+    font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--mute)}
+  .copyday:hover{color:var(--noon); border-color:var(--mute)}
   .chip{border:1px solid var(--line); background:var(--slab); border-radius:99px; padding:8px 13px; font-size:12.5px; color:var(--mute)}
   .chip[aria-pressed="true"]{border-color:var(--dawn); color:var(--dawn); background:rgba(255,158,74,.1)}
   .add{margin-left:auto; background:var(--dawn); color:#231402; font-weight:700; border-radius:10px; padding:9px 18px; font-size:14px}
@@ -145,6 +159,20 @@
   .col span{font-family:var(--mono); font-size:9px; color:var(--mute)}
   .lognote{border-left:2px solid var(--line); padding:2px 0 2px 12px; margin-bottom:14px}
   .lognote p{margin:4px 0 0; font-size:14px; color:#D9D0EE}
+  .day{border:1px solid transparent; border-radius:12px; margin-bottom:6px; background:var(--slab); overflow:hidden}
+  .day.open{border-color:var(--line)}
+  .dayhead{display:flex; align-items:center; gap:11px; width:100%; padding:12px 13px; text-align:left}
+  .dname{flex:none; width:82px; font-size:14px}
+  .dbar{flex:1; height:6px; border-radius:99px; background:var(--slab-2); overflow:hidden}
+  .dbar i{display:block; height:100%; background:linear-gradient(90deg, var(--dusk), var(--dawn))}
+  .dcount{flex:none; font-family:var(--mono); font-size:11px; color:var(--mute); min-width:38px; text-align:right}
+  .daybody{padding:2px 14px 14px; border-top:1px dashed var(--line); margin-top:2px}
+  .daybody .mono{margin:10px 0 5px}
+  .dline{font-size:14.5px; padding:4px 0; color:#D9D0EE}
+  .dline.dim{color:var(--mute)}
+  .dtime{font-family:var(--mono); font-size:10px; color:var(--mute); margin-left:5px}
+  .dnote{margin:12px 0 0; padding-top:11px; border-top:1px dashed var(--line); font-size:14.5px; color:var(--noon)}
+  .done-thing{margin:12px 0 0; font-size:14.5px; color:#D9D0EE}
 
   /* ---------- timer ---------- */
   .timer{display:flex; align-items:center; gap:10px; background:var(--slab); border:1px solid var(--line);
@@ -411,7 +439,14 @@
     var marks = [];
     state.habits.forEach(function(h){ if(h.log && h.log[TODAY] && h.logAt && h.logAt[TODAY]) marks.push(h.logAt[TODAY]); });
     doneToday().forEach(function(x){ if(x.doneAt) marks.push(x.doneAt); });
-    document.getElementById("dots").innerHTML = marks.map(function(ts){
+    var pending = state.tasks.filter(function(t){ return !t.done && t.date === TODAY && t.time; }).map(function(t){
+      var pr = t.time.split(":");
+      var pt = ptAt(Math.min(1, Math.max(0, ((+pr[0]) + (+pr[1])/60 - 6) / 18)));
+      var pa = Math.atan2(CY - pt.y, pt.x - CX);
+      return '<circle cx="' + (CX + (R+13)*Math.cos(pa)).toFixed(1) + '" cy="' + (CY - (R+13)*Math.sin(pa)).toFixed(1) +
+        '" r="3.2" fill="none" stroke="#8E7BFF" stroke-width="1.6"/>';
+    }).join("");
+    document.getElementById("dots").innerHTML = pending + marks.map(function(ts){
       var o = ptAt(dayT(new Date(ts)));
       var ang = Math.atan2(CY - o.y, o.x - CX);
       var x = CX + (R+13)*Math.cos(ang), y = CY - (R+13)*Math.sin(ang);
@@ -547,7 +582,7 @@
 
   /* ---------------- render: views ---------------- */
   var tab = "today";
-  var draft = { when:"today", goal:"" };
+  var draft = { when:"today", goal:"", span:"week", date:"", time:"" };
   var CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="#141126" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>';
 
   function itemHTML(o){
@@ -562,6 +597,14 @@
   function head(label, count){
     return '<div class="sechead"><div class="mono">' + label + '</div><div class="rule"></div><div class="count">' + count + '</div></div>';
   }
+  function dueLabel(g){
+    if(!g.due) return "";
+    var n = daysBetween(TODAY, g.due);
+    if(n < 0) return " · " + Math.abs(n) + (Math.abs(n)===1?" day over":" days over");
+    if(n === 0) return " · due tonight";
+    if(n === 1) return " · 1 day left";
+    return " · " + n + " days left";
+  }
   function goalName(id){ var g = state.goals.find(function(x){ return x.id===id; }); return g ? g.title : ""; }
 
   function viewToday(){
@@ -572,16 +615,27 @@
       '<button class="tbtn" id="tstart">Start</button><button class="tbtn" id="treset">Reset</button></div>';
 
     h += '<div class="composer">' +
+      '<div class="clabel">New task</div>' +
       '<input type="text" id="newtask" placeholder="What needs doing?" maxlength="140">' +
       '<div class="chipset">' +
         '<button class="chip" data-when="today" aria-pressed="' + (draft.when==="today") + '">Today</button>' +
         '<button class="chip" data-when="tomorrow" aria-pressed="' + (draft.when==="tomorrow") + '">Tomorrow</button>' +
+        '<button class="chip" data-when="pick" aria-pressed="' + (draft.when==="pick") + '">Pick a date</button>' +
         '<button class="chip" data-when="habit" aria-pressed="' + (draft.when==="habit") + '">Every day</button>' +
       '</div>' +
-      '<select id="goalsel"><option value="">No goal</option>' +
-        state.goals.map(function(g){ return '<option value="'+g.id+'"'+(draft.goal===g.id?" selected":"")+'>'+esc(g.title)+'</option>'; }).join("") +
-      '</select>' +
-      '<button class="add" id="addbtn">Add</button></div>';
+      (draft.when === "pick"
+        ? '<input type="date" id="pickdate" value="' + (draft.date || shiftKey(TODAY,1)) + '" min="' + TODAY + '">'
+        : '') +
+      (draft.when === "habit" ? '' :
+        '<div class="fieldrow">' +
+          '<label class="fl"><span>At a set time?</span>' +
+          '<input type="time" id="picktime" value="' + (draft.time || "") + '"></label>' +
+          (state.goals.length ? '<label class="fl"><span>Part of a goal?</span><select id="goalsel">' +
+            '<option value="">Not linked</option>' +
+            state.goals.map(function(g){ return '<option value="'+g.id+'"'+(draft.goal===g.id?" selected":"")+'>'+esc(g.title)+'</option>'; }).join("") +
+          '</select></label>' : '') +
+        '</div>') +
+      '<button class="add" id="addbtn">Add task</button></div>';
 
     var habits = state.habits;
     if(habits.length){
@@ -600,7 +654,7 @@
         late.sort(byStar).map(function(t){
           var n = daysBetween(t.date, TODAY);
           return itemHTML({ id:t.id, kind:"task", title:t.title, done:false, star:t.star,
-            meta:(n===1?"1 day late":n+" days late") + (t.goalId ? " · " + goalName(t.goalId) : ""), lateFlag:true });
+            meta:metaFor(t, n===1 ? "1 day late" : n+" days late"), lateFlag:true });
         }).join("") + '</div>';
     }
 
@@ -608,15 +662,18 @@
     h += '<div class="sec">' + head("Today", now.length) +
       (now.length ? now.map(function(t){
         return itemHTML({ id:t.id, kind:"task", title:t.title, done:false, star:t.star,
-          meta:t.goalId ? goalName(t.goalId) : "" });
+          meta:metaFor(t, "") });
       }).join("") : '<div class="empty">Nothing scheduled. Add the first thing above — small counts.</div>') + '</div>';
 
-    var later = laterTasks().sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+    var later = laterTasks().sort(function(a,b){
+      if(a.date !== b.date) return a.date < b.date ? -1 : 1;
+      return byStar(a,b);
+    });
     if(later.length){
       h += '<div class="sec">' + head("Coming up", later.length) +
         later.map(function(t){
           return itemHTML({ id:t.id, kind:"task", title:t.title, done:false, star:t.star,
-            meta:new Date(t.date+"T12:00:00").toLocaleDateString(undefined,{weekday:"short", month:"short", day:"numeric"}) });
+            meta:metaFor(t, new Date(t.date+"T12:00:00").toLocaleDateString(undefined,{weekday:"short", month:"short", day:"numeric"})) });
         }).join("") + '</div>';
     }
 
@@ -630,9 +687,29 @@
     }
 
     h += '<button class="endday" id="endday">Close out the day</button>';
+    h += '<button class="copyday" id="copyday">Copy my day as text</button>';
     return h;
   }
-  function byStar(a,b){ return (b.star?1:0) - (a.star?1:0); }
+  function byStar(a,b){
+    if(!!a.star !== !!b.star) return (b.star?1:0) - (a.star?1:0);
+    if(a.time && b.time) return a.time < b.time ? -1 : 1;
+    if(a.time) return -1;
+    if(b.time) return 1;
+    return 0;
+  }
+  function clockOf(t){
+    if(!t.time) return "";
+    var p = t.time.split(":"), h = +p[0], m = p[1];
+    var ap = h < 12 ? "am" : "pm", hh = h % 12; if(hh === 0) hh = 12;
+    return hh + ":" + m + ap;
+  }
+  function metaFor(t, extra){
+    var bits = [];
+    if(t.time) bits.push(clockOf(t));
+    if(extra) bits.push(extra);
+    if(t.goalId) bits.push(goalName(t.goalId));
+    return bits.join(" · ");
+  }
   function habitRun(x){
     var n = 0, k = TODAY;
     if(!(x.log && x.log[TODAY])) k = shiftKey(TODAY, -1);
@@ -642,8 +719,15 @@
 
   function viewGoals(){
     var h = '<div class="composer">' +
+      '<div class="clabel">New goal</div>' +
       '<input type="text" id="newgoal" placeholder="A goal worth chasing" maxlength="80">' +
       '<input type="text" id="newwhy" placeholder="Why it matters (optional)" maxlength="110">' +
+      '<div class="chipset">' +
+        ['day','week','month','open'].map(function(s){
+          var lab = s==='day' ? 'By tonight' : s==='week' ? 'This week' : s==='month' ? 'This month' : 'No deadline';
+          return '<button class="chip" data-span="'+s+'" aria-pressed="'+(draft.span===s)+'">'+lab+'</button>';
+        }).join('') +
+      '</div>' +
       '<button class="add" id="goalbtn">Add goal</button></div>';
     if(!state.goals.length){
       h += '<div class="empty">No goals yet. Name one, then hang tasks off it on the Today tab — the bar fills as you clear them.</div>';
@@ -657,10 +741,81 @@
         '<h3>' + esc(g.title) + '</h3>' +
         (g.why ? '<p class="why">' + esc(g.why) + '</p>' : '') +
         '<div class="bar"><i style="width:' + pctv + '%"></i></div>' +
-        '<div class="goalfoot"><div class="mono">' + done + " of " + all.length + " tasks cleared · " + pctv + '%</div>' +
+        '<div class="goalfoot"><div class="mono">' + done + " of " + all.length + " cleared" + dueLabel(g) + '</div>' +
         '<button class="rowbtn" data-delgoal="' + g.id + '" aria-label="Delete goal">×</button></div></div>';
     }).join("");
     return h;
+  }
+
+  var openDay = null;
+  var histLimit = 30;
+
+  function allActiveDays(){
+    var set = {};
+    Object.keys(state.history || {}).forEach(function(k){ set[k] = 1; });
+    state.tasks.forEach(function(t){ if(t.doneDay) set[t.doneDay] = 1; });
+    state.habits.forEach(function(x){ Object.keys(x.log || {}).forEach(function(k){ set[k] = 1; }); });
+    Object.keys(state.oneThing || {}).forEach(function(k){ set[k] = 1; });
+    return Object.keys(set).sort().reverse();
+  }
+  function dayDetail(key){
+    var tasks = state.tasks.filter(function(t){ return t.doneDay === key; });
+    var habits = state.habits.filter(function(x){ return x.log && x.log[key]; });
+    var rec = state.history[key] || null;
+    var live = key === TODAY ? todayStats() : null;
+    return {
+      tasks: tasks, habits: habits,
+      note: rec ? (rec.note || "") : "",
+      one: (state.oneThing || {})[key] || "",
+      done: live ? live.done : (rec ? rec.done : tasks.length + habits.length),
+      total: live ? live.total : (rec ? rec.total : tasks.length + habits.length),
+      rate: live ? live.rate : (rec ? rec.rate : 1)
+    };
+  }
+  function dayTitle(key){
+    if(key === TODAY) return "Today";
+    if(key === shiftKey(TODAY,-1)) return "Yesterday";
+    return new Date(key+"T12:00:00").toLocaleDateString(undefined,{weekday:"short", month:"short", day:"numeric"});
+  }
+  function historyHTML(){
+    var days = allActiveDays();
+    if(!days.length){
+      return '<div class="sec">' + head("History", "0 days") +
+        '<div class="empty">Nothing logged yet. Once you finish a day, it lands here — what you cleared, and the line you wrote about it.</div></div>';
+    }
+    var shown = days.slice(0, histLimit);
+    var out = '<div class="sec">' + head("History", days.length + (days.length===1?" day":" days"));
+    out += shown.map(function(k){
+      var dd = dayDetail(k), pctv = Math.round(dd.rate*100), open = openDay === k;
+      var row = '<div class="day' + (open ? " open" : "") + '">' +
+        '<button class="dayhead" data-day="' + k + '">' +
+          '<span class="dname">' + dayTitle(k) + '</span>' +
+          '<span class="dbar"><i style="width:' + pctv + '%"></i></span>' +
+          '<span class="dcount">' + dd.done + '/' + dd.total + '</span>' +
+        '</button>';
+      if(open){
+        row += '<div class="daybody">';
+        if(dd.one) row += '<p class="done-thing"><b>One thing:</b> ' + esc(dd.one) + '</p>';
+        if(dd.habits.length){
+          row += '<div class="mono">Habits kept</div>' +
+            dd.habits.map(function(x){ return '<div class="dline">✓ ' + esc(x.title) + '</div>'; }).join("");
+        }
+        if(dd.tasks.length){
+          row += '<div class="mono" style="margin-top:8px">Cleared</div>' +
+            dd.tasks.sort(function(a,b){ return (a.doneAt||0) - (b.doneAt||0); }).map(function(t){
+              return '<div class="dline">✓ ' + esc(t.title) +
+                (t.doneAt ? ' <span class="dtime">' + new Date(t.doneAt).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"}) + '</span>' : '') +
+                '</div>';
+            }).join("");
+        }
+        if(!dd.habits.length && !dd.tasks.length) row += '<div class="dline dim">Nothing cleared this day.</div>';
+        if(dd.note) row += '<p class="dnote">' + esc(dd.note) + '</p>';
+        row += '</div>';
+      }
+      return row + '</div>';
+    }).join("");
+    if(days.length > histLimit) out += '<button class="copyday" id="moredays">Show ' + Math.min(30, days.length - histLimit) + ' more days</button>';
+    return out + '</div>';
   }
 
   function viewProgress(){
@@ -691,15 +846,11 @@
           '<i style="height:' + Math.max(3, hgt) + '%"></i><span>' + lbl + '</span></div>';
       }).join("") + '</div></div>';
 
-    var notes = Object.keys(state.history).filter(function(kk){ return state.history[kk].note; }).sort().reverse().slice(0,10);
-    h += '<div class="sec">' + head("The log", notes.length + " entries") +
-      (notes.length ? notes.map(function(kk){
-        var d = state.history[kk];
-        return '<div class="lognote"><div class="mono">' +
-          new Date(kk+"T12:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"}) +
-          " · " + d.done + "/" + d.total + '</div><p>' + esc(d.note) + '</p></div>';
-      }).join("") : '<div class="empty">Close out a day and whatever you write shows up here. Useful when a week feels like a blur.</div>') +
-      '</div>';
+    h += historyHTML();
+    h += '<div class="sec">' + head("Your data", "on this phone only") +
+      '<div class="empty" style="text-align:left">Momentum keeps everything in this browser. Clearing Safari\'s website data would erase it. Copy a backup now and then — it\'s plain text you can paste into a note or email to yourself.</div>' +
+      '<button class="copyday" id="backup">Copy a backup</button>' +
+      '<button class="copyday" id="restore">Restore from a backup</button></div>';
     return h;
   }
 
@@ -726,16 +877,35 @@
   function addTask(){
     var el = document.getElementById("newtask");
     var v = el.value.trim();
-    if(!v) return;
+    if(!v){
+      el.classList.add("nudgeme");
+      toast("Type the task first, then Add.");
+      setTimeout(function(){ el.classList.remove("nudgeme"); }, 500);
+      el.focus();
+      return;
+    }
+    var tf = document.getElementById("picktime");
+    var time = tf ? tf.value : "";
     if(draft.when === "habit"){
       state.habits.push({ id:uid(), title:v, log:{}, logAt:{}, createdDay:TODAY });
+      toast("Added to your daily habits.");
     } else {
-      state.tasks.push({ id:uid(), title:v, date: draft.when==="tomorrow" ? shiftKey(TODAY,1) : TODAY,
+      var when = TODAY;
+      if(draft.when === "tomorrow") when = shiftKey(TODAY, 1);
+      if(draft.when === "pick"){
+        var pd = document.getElementById("pickdate");
+        when = (pd && pd.value) ? pd.value : shiftKey(TODAY, 1);
+      }
+      state.tasks.push({ id:uid(), title:v, date:when, time:time,
         goalId: draft.goal || "", star:false, done:false, createdDay:TODAY });
+      toast(when === TODAY ? "On today's board."
+        : "Set for " + new Date(when+"T12:00:00").toLocaleDateString(undefined,{weekday:"short", month:"short", day:"numeric"}) + ".");
     }
     el.value = "";
+    draft.time = "";
     save(); render();
-    document.getElementById("newtask").focus();
+    var again = document.getElementById("newtask");
+    if(again) again.focus();
   }
 
   function toggle(id, kind){
@@ -756,7 +926,7 @@
   }
 
   document.addEventListener("click", function(e){
-    var el = e.target.closest("[data-toggle],[data-del],[data-star],[data-when],[role='tab'],[data-delgoal],#addbtn,#goalbtn,#onebtn,#namebtn,#endday,#tstart,#treset,#asknudge,#testnudge");
+    var el = e.target.closest("[data-toggle],[data-del],[data-star],[data-when],[data-span],[data-day],[role='tab'],[data-delgoal],#addbtn,#goalbtn,#onebtn,#namebtn,#endday,#copyday,#moredays,#backup,#restore,#tstart,#treset,#asknudge,#testnudge");
     if(!el) return;
     var d = el.dataset;
 
@@ -780,11 +950,21 @@
     if(d.when){ draft.when = d.when; render(); return; }
     if(el.id === "addbtn"){ addTask(); return; }
     if(el.id === "goalbtn"){
-      var g = document.getElementById("newgoal").value.trim();
-      if(!g) return;
-      state.goals.push({ id:uid(), title:g, why:document.getElementById("newwhy").value.trim(), createdDay:TODAY });
-      save(); render(); return;
+      var gi = document.getElementById("newgoal");
+      var g = gi.value.trim();
+      if(!g){
+        gi.classList.add("nudgeme"); toast("Name the goal first.");
+        setTimeout(function(){ gi.classList.remove("nudgeme"); }, 500); gi.focus(); return;
+      }
+      var due = "";
+      if(draft.span === "day") due = TODAY;
+      else if(draft.span === "week") due = shiftKey(TODAY, 7);
+      else if(draft.span === "month") due = shiftKey(TODAY, 30);
+      state.goals.push({ id:uid(), title:g, why:document.getElementById("newwhy").value.trim(),
+        span:draft.span, due:due, createdDay:TODAY });
+      toast("Goal set."); save(); render(); return;
     }
+    if(d.span){ draft.span = d.span; render(); return; }
     if(el.id === "namebtn"){
       var nm = document.getElementById("namein");
       state.name = (nm ? nm.value.trim() : "").slice(0,24);
@@ -798,12 +978,19 @@
     if(el.id === "asknudge"){ askNudges(); return; }
     if(el.id === "testnudge"){ fire("This is what it looks like.", "Momentum will use these sparingly. Three a day, maximum.", "test"); return; }
     if(el.id === "endday"){ openRecap(); return; }
+    if(el.id === "copyday"){ copyDay(); return; }
+    if(d.day){ openDay = (openDay === d.day) ? null : d.day; render(); return; }
+    if(el.id === "moredays"){ histLimit += 30; render(); return; }
+    if(el.id === "backup"){ doBackup(); return; }
+    if(el.id === "restore"){ doRestore(); return; }
     if(el.id === "tstart"){ timerToggle(); return; }
     if(el.id === "treset"){ timerReset(); return; }
   });
 
   document.addEventListener("change", function(e){
     if(e.target.id === "goalsel") draft.goal = e.target.value;
+    if(e.target.id === "pickdate") draft.date = e.target.value;
+    if(e.target.id === "picktime") draft.time = e.target.value;
   });
   document.addEventListener("keydown", function(e){
     if(e.key !== "Enter") return;
@@ -813,7 +1000,101 @@
     if(e.target.id === "newgoal" || e.target.id === "newwhy") document.getElementById("goalbtn").click();
   });
 
+  function copyDay(){
+    var s = todayStats(), lines = [];
+    lines.push("MOMENTUM — " + new Date().toLocaleDateString(undefined,{weekday:"long", month:"long", day:"numeric"}));
+    lines.push(s.done + "/" + s.total + " done (" + Math.round(s.rate*100) + "%) · streak " + streakCount() + " days");
+    if(state.oneThing[TODAY]) lines.push("One thing: " + state.oneThing[TODAY]);
+    lines.push("");
+    if(state.habits.length){
+      lines.push("EVERY DAY");
+      state.habits.forEach(function(x){
+        lines.push("  [" + (x.log && x.log[TODAY] ? "x" : " ") + "] " + x.title);
+      });
+      lines.push("");
+    }
+    var late = openTasks().filter(function(t){ return t.date < TODAY; });
+    if(late.length){
+      lines.push("CARRIED OVER");
+      late.forEach(function(t){ lines.push("  [ ] " + t.title + " (" + daysBetween(t.date, TODAY) + "d late)"); });
+      lines.push("");
+    }
+    var now = state.tasks.filter(function(t){ return !t.done && t.date === TODAY; }).sort(byStar);
+    lines.push("TODAY");
+    if(!now.length) lines.push("  (nothing left)");
+    now.forEach(function(t){ lines.push("  [ ] " + (t.time ? clockOf(t) + " " : "") + t.title + (t.star ? " *" : "")); });
+    var dn = doneToday();
+    if(dn.length){
+      lines.push("");
+      lines.push("CLEARED");
+      dn.forEach(function(t){ lines.push("  [x] " + t.title); });
+    }
+    var later = laterTasks();
+    if(later.length){
+      lines.push("");
+      lines.push("COMING UP");
+      later.sort(function(a,b){ return a.date < b.date ? -1 : 1; }).slice(0,10).forEach(function(t){
+        lines.push("  " + t.date + (t.time ? " " + clockOf(t) : "") + " — " + t.title);
+      });
+    }
+    var text = lines.join("\n");
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ toast("Copied. Paste it anywhere."); })
+        .catch(function(){ showText(text); });
+    } else { showText(text); }
+  }
+  function doBackup(){
+    var text = JSON.stringify(state);
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ toast("Backup copied. Paste it somewhere safe."); })
+        .catch(function(){ showText(text); });
+    } else { showText(text); }
+  }
+  function doRestore(){
+    var wrap = document.createElement("div");
+    wrap.className = "scrim";
+    wrap.innerHTML = '<div class="sheet"><div class="mono">Restore from a backup</div>' +
+      '<h2>This replaces everything.</h2>' +
+      '<p style="font-size:14px;color:#D9D0EE;margin:0">Paste a backup below. Your current tasks, habits and history will be overwritten.</p>' +
+      '<textarea id="restorein" placeholder="Paste your backup here"></textarea>' +
+      '<div class="sheetbtns"><button class="ghost" id="rcancel2">Cancel</button>' +
+      '<button class="solid" id="rgo">Replace my data</button></div></div>';
+    document.body.appendChild(wrap);
+    wrap.querySelector("#rcancel2").onclick = function(){ wrap.remove(); };
+    wrap.addEventListener("click", function(ev){ if(ev.target === wrap) wrap.remove(); });
+    wrap.querySelector("#rgo").onclick = function(){
+      var raw = wrap.querySelector("#restorein").value.trim();
+      var parsed;
+      try{ parsed = JSON.parse(raw); }
+      catch(e){ toast("That isn't a valid backup."); return; }
+      if(!parsed || !Array.isArray(parsed.tasks) || !Array.isArray(parsed.habits)){
+        toast("That isn't a Momentum backup."); return;
+      }
+      state = Object.assign({ name:"", habits:[], tasks:[], goals:[], history:{}, oneThing:{},
+        lastActive:TODAY, briefSeen:{}, totalDone:0, bestStreak:0 }, parsed);
+      state.lastActive = TODAY;
+      save(); wrap.remove(); render();
+      toast("Restored.");
+    };
+  }
+  function showText(text){
+    var wrap = document.createElement("div");
+    wrap.className = "scrim";
+    wrap.innerHTML = '<div class="sheet"><div class="mono">Your day, as text</div>' +
+      '<textarea id="dayout" style="min-height:260px"></textarea>' +
+      '<div class="sheetbtns"><button class="ghost" id="dclose">Close</button></div></div>';
+    document.body.appendChild(wrap);
+    var ta = wrap.querySelector("#dayout");
+    ta.value = text; ta.select();
+    wrap.querySelector("#dclose").onclick = function(){ wrap.remove(); };
+    wrap.addEventListener("click", function(ev){ if(ev.target === wrap) wrap.remove(); });
+  }
+
   /* ---------------- recap sheet ---------------- */
+  function tomorrowCount(){
+    var k = shiftKey(TODAY, 1);
+    return state.tasks.filter(function(t){ return !t.done && t.date === k; }).length;
+  }
   function openRecap(){
     var s = todayStats();
     var left = openTasks();
@@ -829,6 +1110,7 @@
         '<div><b>' + Math.round(s.rate*100) + '%</b><span class="mono">of the day</span></div>' +
       '</div>' +
       '<p style="font-size:15px;line-height:1.5;margin:0;color:#D9D0EE">' + pick(LINES[tier], TODAY + "r") + '</p>' +
+      (tomorrowCount() ? '<p style="font-size:13.5px;color:#8E86B4;margin:10px 0 0">' + tomorrowCount() + ' already scheduled for tomorrow' + (left.length ? ', plus what you push across.' : '.') + '</p>' : '') +
       '<textarea id="recapnote" placeholder="One honest line about today — what worked, what got in the way."></textarea>' +
       '<div class="sheetbtns">' +
         '<button class="ghost" id="rcancel">Not yet</button>' +
