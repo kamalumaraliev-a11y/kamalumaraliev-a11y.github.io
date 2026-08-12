@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#141126">
+<meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -32,7 +33,7 @@
     --body:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
-  html,body{margin:0; padding:0; width:100%; max-width:100%; overflow-x:hidden; background:var(--ink); -webkit-text-size-adjust:100%; text-size-adjust:100%; touch-action:manipulation}
+  html,body{margin:0; padding:0; width:100%; max-width:100%; overflow-x:hidden; background:var(--ink); font-family:var(--body); color:var(--noon); overscroll-behavior-y:contain; -webkit-text-size-adjust:100%; text-size-adjust:100%; touch-action:manipulation}
   #app{
     font-family:var(--body);
     background:
@@ -261,14 +262,19 @@
 
   /* installed-app chrome */
   #app{padding-top:calc(22px + env(safe-area-inset-top)); padding-bottom:calc(90px + env(safe-area-inset-bottom))}
-  .nudgebar{display:flex; align-items:center; gap:10px; border:1px solid var(--line); background:var(--slab);
+  .nudgebar{display:flex; flex-wrap:wrap; align-items:center; gap:10px; border:1px solid var(--line); background:var(--slab);
     border-radius:12px; padding:11px 13px; margin-bottom:16px; font-size:13.5px; color:var(--mute)}
-  .nudgebar b{color:var(--noon); font-weight:600}
+  .nudgebar b{color:var(--noon); font-weight:600; white-space:nowrap}
   .nudgebar button{margin-left:auto; flex:none; border:1px solid var(--line); border-radius:8px; padding:7px 12px;
     font-size:12.5px; color:var(--dusk); white-space:nowrap}
   .nudgebar button:hover{background:rgba(142,123,255,.14)}
   .nudgebar.on{border-color:rgba(79,209,165,.4); background:rgba(79,209,165,.07)}
   .nudgebar.on b{color:var(--mint)}
+
+  /* touch targets: 44px hit area, visuals unchanged */
+  .box, .rowbtn, .gear{position:relative}
+  .box::after, .rowbtn::after, .gear::after{content:""; position:absolute; top:50%; left:50%;
+    transform:translate(-50%,-50%); width:44px; height:44px; border-radius:50%}
 </style>
 </head>
 <body>
@@ -684,7 +690,7 @@
 
     h += '<div class="composer">' +
       '<div class="clabel">New task</div>' +
-      '<input type="text" id="newtask" placeholder="What needs doing?" maxlength="140">' +
+      '<input type="text" id="newtask" placeholder="What needs doing?" maxlength="140" enterkeyhint="done" autocapitalize="sentences">' +
       '<div class="chipset">' +
         '<button class="chip" data-when="today" aria-pressed="' + (draft.when==="today") + '">Today</button>' +
         '<button class="chip" data-when="tomorrow" aria-pressed="' + (draft.when==="tomorrow") + '">Tomorrow</button>' +
@@ -994,6 +1000,17 @@
     t.querySelector(".undo").onclick = function(){ clearTimeout(timer); t.remove(); fn(); };
   }
 
+  /* keep whatever is typed in the composer when a chip re-renders the view */
+  function keepDraft(){
+    var a = document.getElementById("newtask"); if(a) draft.text = a.value;
+    var b = document.getElementById("newgoal"); if(b) draft.gtext = b.value;
+    var c = document.getElementById("newwhy");  if(c) draft.gwhy = c.value;
+  }
+  function putDraft(){
+    var a = document.getElementById("newtask"); if(a && draft.text) a.value = draft.text;
+    var b = document.getElementById("newgoal"); if(b && draft.gtext) b.value = draft.gtext;
+    var c = document.getElementById("newwhy");  if(c && draft.gwhy) c.value = draft.gwhy;
+  }
   function addTask(){
     var el = document.getElementById("newtask");
     var v = el.value.trim();
@@ -1076,7 +1093,7 @@
       state.tasks.forEach(function(t){ if(t.goalId === d.delgoal) t.goalId = ""; });
       save(); render(); return;
     }
-    if(d.when){ draft.when = d.when; render(); return; }
+    if(d.when){ keepDraft(); draft.when = d.when; render(); putDraft(); return; }
     if(el.id === "addbtn"){ addTask(); return; }
     if(el.id === "goalbtn"){
       var gi = document.getElementById("newgoal");
@@ -1093,11 +1110,11 @@
         span:draft.span, due:due, createdDay:TODAY });
       toast("Goal set."); save(); render(); return;
     }
-    if(d.span){ draft.span = d.span; render(); return; }
-    if(d.dow){
+    if(d.span){ keepDraft(); draft.span = d.span; render(); putDraft(); return; }
+    if(d.dow){ keepDraft();
       var n = +d.dow, i = draft.days.indexOf(n);
       if(i === -1) draft.days.push(n); else draft.days.splice(i,1);
-      render(); return;
+      render(); putDraft(); return;
     }
     if(el.id === "namebtn"){
       var nm = document.getElementById("namein");
