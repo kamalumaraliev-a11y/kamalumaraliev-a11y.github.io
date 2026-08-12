@@ -312,6 +312,47 @@
     .vmeta p{font-size:13px; color:var(--mute); margin:0 0 10px; line-height:1.5}
     .vclose{position:absolute; right:13px; top:calc(env(safe-area-inset-top) + 13px); z-index:3; width:40px; height:40px; border-radius:50%; border:0; background:rgba(255,255,255,.14); color:#fff; font-size:16px}
     .vrow{flex:0 0 auto; display:flex; gap:7px; padding:12px 18px 0; flex-wrap:wrap}
+
+    /* ----------- goal cards + goal page ----------- */
+    .gcard{display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:11px; margin-bottom:9px; border:1px solid var(--line); border-radius:15px; background:var(--slab); color:var(--noon); font-family:var(--body)}
+    .gcard .thumb{flex:0 0 auto; width:62px; height:62px; border-radius:12px; overflow:hidden; background:var(--slab-2); display:flex; align-items:center; justify-content:center}
+    .gcard .thumb img{width:100%; height:100%; object-fit:cover; display:block}
+    .gcard .thumb u{text-decoration:none; font-family:var(--display); font-weight:800; font-size:23px; color:var(--mute)}
+    .gcard .gmid{flex:1 1 auto; min-width:0}
+    .gcard .gmid > b{display:block; font-family:var(--display); font-weight:800; font-size:16px; line-height:1.25; margin-bottom:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+    .gcard .gmid > i{display:block; font-style:normal; font-size:11.5px; color:var(--mute); margin-bottom:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+    .gcard .bar{display:block}
+    .gcard .chev{flex:0 0 auto; color:var(--mute); font-size:20px; line-height:1}
+    .page{position:fixed; inset:0; z-index:65; background:var(--ink); overflow-y:auto; -webkit-overflow-scrolling:touch; padding:0 0 calc(env(safe-area-inset-bottom) + 36px)}
+    .pbar{position:sticky; top:0; z-index:4; display:flex; align-items:center; gap:8px; padding:calc(env(safe-area-inset-top) + 10px) 14px 10px; background:var(--ink)}
+    .pbar .back{min-height:42px; padding:8px 12px 8px 4px; border:0; background:transparent; color:var(--noon); font-family:var(--body); font-size:14.5px}
+    .pbar .sp{flex:1 1 auto}
+    .pwrap{padding:2px 16px 0}
+    .pwrap .gbtns{margin-bottom:20px}
+    .hero{position:relative; display:block; width:100%; padding:0; border:1px solid var(--line); background:#0A0D16; border-radius:16px; overflow:hidden; margin-bottom:16px; -webkit-tap-highlight-color:transparent}
+    .hero img{display:block; width:100%; max-height:46vh; object-fit:contain; margin:0 auto}
+    .hero .dots{position:absolute; right:11px; bottom:11px; display:flex; gap:4px}
+    .hero .dots i{width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.42)}
+    .hero .dots i.on{background:#fff}
+    .hero .cap{position:absolute; left:0; right:0; bottom:0; padding:28px 13px 10px; text-align:left; font-size:12px; color:#fff; background:linear-gradient(180deg, rgba(0,0,0,0), rgba(6,8,14,.85))}
+    .nohero{display:block; width:100%; margin-bottom:16px; padding:26px 18px; border:1px dashed var(--line); border-radius:16px; background:transparent; color:var(--mute); font-family:var(--body); font-size:13px; line-height:1.5; text-align:center}
+    .ptitle{font-family:var(--display); font-weight:800; font-size:26px; line-height:1.15; margin:0 0 6px}
+    .pwhy{font-size:13.5px; color:var(--mute); line-height:1.55; margin:0 0 16px}
+    .strip{display:flex; gap:8px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px}
+    .strip button{flex:0 0 auto; width:80px; height:80px; padding:0; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--slab-2); color:var(--mute); font-size:12px; font-family:var(--body)}
+    .strip button img{width:100%; height:100%; object-fit:cover; display:block}
+    .spark{width:100%; height:88px; display:block; margin-top:4px}
+    .spark .ln{fill:none; stroke:#FF9E4A; stroke-width:2; stroke-linejoin:round; stroke-linecap:round}
+    .spark .tl{stroke:var(--line); stroke-width:1; stroke-dasharray:3 4}
+    .sparkfoot{display:flex; justify-content:space-between; font-size:11px; color:var(--mute); margin-top:4px}
+    .log{border:1px solid var(--line); border-radius:14px; overflow:hidden}
+    .logrow{display:flex; align-items:baseline; gap:10px; padding:11px 13px; border-bottom:1px solid var(--line); font-size:13.5px; line-height:1.4}
+    .logrow:last-child{border-bottom:0}
+    .logrow.rep{opacity:.6}
+    .logrow em{font-style:normal; color:#FF9E4A; flex:0 0 auto}
+    .logrow s{text-decoration:none; flex:1 1 auto; min-width:0}
+    .logrow u{text-decoration:none; flex:0 0 auto; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--mute)}
+    .morebtn{display:block; width:100%; min-height:44px; margin-top:9px; border:1px solid var(--line); border-radius:99px; background:transparent; color:var(--mute); font-family:var(--body); font-size:12.5px}
 </style>
 </head>
 <body>
@@ -950,14 +991,32 @@
       if(a >= 1000) return (n / 1000).toFixed(a < 100000 ? 1 : 0).replace(/\.0$/, "") + "K";
       return String(Math.round(n * 10) / 10);
     }
+    function goalBase(g){
+      var m = g.marks || [];
+      return m.length ? (+m[0].v || 0) : null;
+    }
+    function goalDown(g){
+      if(!(g.target > 0)) return false;
+      var b = goalBase(g);
+      return b !== null ? b > g.target : (+g.cur || 0) > g.target;
+    }
     function goalPct(g){
-      if(g.target > 0) return Math.max(0, Math.min(100, Math.round((+g.cur || 0) / g.target * 100)));
+      if(g.target > 0){
+        var cur = +g.cur || 0;
+        if(goalDown(g)){
+          var b = goalBase(g);
+          if(b === null) b = cur;
+          if(b <= g.target) return 100;
+          return Math.max(0, Math.min(100, Math.round((b - cur) / (b - g.target) * 100)));
+        }
+        return Math.max(0, Math.min(100, Math.round(cur / g.target * 100)));
+      }
       var all = state.tasks.filter(function(t){ return t.goalId === g.id; });
       var done = all.filter(function(t){ return t.done; }).length;
       return all.length ? Math.round(done / all.length * 100) : 0;
     }
     function goalNote(g){
-      if(g.target > 0) return nfmt(g.cur || 0) + " of " + nfmt(g.target) + (g.unit ? " " + g.unit : "") + " · " + goalPct(g) + "%";
+      if(g.target > 0) return nfmt(g.cur || 0) + (goalDown(g) ? " → " : " of ") + nfmt(g.target) + (g.unit ? " " + g.unit : "") + " · " + goalPct(g) + "%";
       var all = state.tasks.filter(function(t){ return t.goalId === g.id; });
       if(!all.length) return "no number on it yet";
       return all.filter(function(t){ return t.done; }).length + " of " + all.length + " cleared";
@@ -982,7 +1041,7 @@
         if(gain !== 0 && n > 0) note = '<u>' + (gain > 0 ? "+" : "−") + nfmt(Math.abs(gain)) + " in " + n + (n === 1 ? " day" : " days") + '</u>';
       }
       return '<div class="tgt"><b>' + nfmt(g.cur || 0) + '</b>' +
-        '<s>of ' + nfmt(g.target) + (g.unit ? " " + esc(g.unit) : "") + '</s>' +
+        '<s>' + (goalDown(g) ? "→ " : "of ") + nfmt(g.target) + (g.unit ? " " + esc(g.unit) : "") + '</s>' +
         '<em>' + pct + '%</em>' + note + '</div>';
     }
     function gbtnsHTML(g){
@@ -1040,7 +1099,7 @@
       var w = sheetOpen(
         '<div class="mono">Where are you right now?</div>' +
         '<input type="number" id="lgnum" class="bigin" inputmode="decimal" value="' + (+g.cur || 0) + '">' +
-        '<p class="why" style="margin:10px 0 0">Target is ' + esc(nfmt(g.target) + (g.unit ? " " + g.unit : "")) + '. Honest beats flattering.</p>' +
+        '<p class="why" style="margin:10px 0 0">' + (goalDown(g) ? "Heading down to " : "Target is ") + esc(nfmt(g.target) + (g.unit ? " " + g.unit : "")) + '. Honest beats flattering.</p>' +
         '<div class="sheetbtns"><button class="ghost" data-close="1">Cancel</button><button class="solid" id="lgsave">Log it</button></div>',
         function(w){
           w.querySelector("#lgsave").onclick = function(){
@@ -1166,6 +1225,224 @@
       });
     }
 
+
+    /* ----------- one full page per goal ----------- */
+    var goalRepaint = null;
+
+    function goalTasks(g){ return state.tasks.filter(function(t){ return t.goalId === g.id; }); }
+    function goalHabits(g){ return (state.habits || []).filter(function(x){ return x.goalId === g.id; }); }
+
+    function gcardHTML(g){
+      var ids = goalShots(g), pct = goalPct(g);
+      return '<button class="gcard" data-gopen="' + g.id + '">' +
+        '<span class="thumb">' +
+          (ids.length
+            ? '<img src="' + SHOTS[ids[0]].src + '" alt="" loading="lazy">'
+            : '<u>' + esc((g.title || "?").trim().charAt(0).toUpperCase()) + '</u>') +
+        '</span>' +
+        '<span class="gmid">' +
+          '<b>' + esc(g.title) + '</b>' +
+          '<i>' + goalNote(g) + dueLabel(g) + '</i>' +
+          '<span class="bar"><i style="width:' + pct + '%"></i></span>' +
+        '</span>' +
+        '<span class="chev">›</span>' +
+      '</button>';
+    }
+
+    function goalStats(g){
+      var all = goalTasks(g);
+      var done = all.filter(function(t){ return t.done; });
+      var hb = goalHabits(g);
+      var wk = shiftKey(TODAY, -6);
+      var days = {}, last7 = 0;
+      done.forEach(function(t){
+        if(t.doneDay){ days[t.doneDay] = 1; if(t.doneDay >= wk) last7++; }
+      });
+      hb.forEach(function(x){
+        Object.keys(x.log || {}).forEach(function(k){
+          if(x.log[k]){ days[k] = 1; if(k >= wk) last7++; }
+        });
+      });
+      return {
+        all: all,
+        done: done,
+        open: all.filter(function(t){ return !t.done; }),
+        habits: hb,
+        last7: last7,
+        activeDays: Object.keys(days).length,
+        since: g.createdDay ? Math.max(0, daysBetween(g.createdDay, TODAY)) : null
+      };
+    }
+
+    function statBox(label, val, sub){
+      return '<div class="stat"><div class="mono">' + label + '</div><b>' + val + '</b><div class="mono">' + sub + '</div></div>';
+    }
+
+    function sparkHTML(g){
+      var m = (g.marks || []).slice();
+      if(m.length < 2) return "";
+      m.sort(function(a, b){ return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; });
+      var span = Math.max(1, daysBetween(m[0].d, m[m.length - 1].d));
+      var vals = m.map(function(p){ return +p.v || 0; });
+      var top = Math.max(g.target > 0 ? g.target : 0, Math.max.apply(null, vals)) || 1;
+      var W = 300, H = 84, pad = 5;
+      var pts = m.map(function(p, i){
+        var x = pad + (daysBetween(m[0].d, p.d) / span) * (W - pad * 2);
+        var y = H - pad - (vals[i] / top) * (H - pad * 2);
+        return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
+      });
+      var d = pts.map(function(p, i){ return (i ? "L" : "M") + p[0] + " " + p[1]; }).join(" ");
+      var area = d + " L" + pts[pts.length - 1][0] + " " + (H - pad) + " L" + pts[0][0] + " " + (H - pad) + " Z";
+      var ty = g.target > 0 ? Math.round((H - pad - (g.target / top) * (H - pad * 2)) * 10) / 10 : null;
+      return '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
+          '<defs><linearGradient id="sgrad" x1="0" y1="0" x2="0" y2="1">' +
+            '<stop offset="0" stop-color="rgba(255,158,74,.32)"/>' +
+            '<stop offset="1" stop-color="rgba(255,158,74,0)"/>' +
+          '</linearGradient></defs>' +
+          (ty !== null ? '<line class="tl" x1="0" y1="' + ty + '" x2="' + W + '" y2="' + ty + '" vector-effect="non-scaling-stroke"></line>' : '') +
+          '<path d="' + area + '" fill="url(#sgrad)"></path>' +
+          '<path class="ln" d="' + d + '" vector-effect="non-scaling-stroke"></path>' +
+        '</svg>' +
+        '<div class="sparkfoot"><span>' + dayTitle(m[0].d) + '</span><span>' +
+          (g.target > 0 ? "target " + nfmt(g.target) + (g.unit ? " " + esc(g.unit) : "") : "") +
+        '</span><span>' + dayTitle(m[m.length - 1].d) + '</span></div>';
+    }
+
+    function openGoal(goalId){
+      var w = document.createElement("div");
+      w.className = "page";
+      document.body.appendChild(w);
+      var showAll = false, armed = false, armTimer = null;
+
+      function close(){
+        goalRepaint = null;
+        clearTimeout(armTimer);
+        w.remove();
+      }
+
+      function paint(){
+        var g = state.goals.filter(function(x){ return x.id === goalId; })[0];
+        if(!g){ close(); return; }
+        var y = w.scrollTop;
+        var ids = goalShots(g), pct = goalPct(g), st = goalStats(g);
+
+        var h = '<div class="pbar">' +
+            '<button class="back" data-gback="1">‹ Goals</button><span class="sp"></span>' +
+            '<button class="rowbtn" data-gdel="1">' + (armed ? "Tap again" : "Delete") + '</button>' +
+          '</div><div class="pwrap">';
+
+        h += ids.length
+          ? '<button class="hero" data-vopen="' + g.id + '">' +
+              '<img src="' + SHOTS[ids[0]].src + '" alt="' + esc(g.title) + '">' +
+              (SHOTS[ids[0]].cap ? '<span class="cap">' + esc(SHOTS[ids[0]].cap) + '</span>' : '') +
+              (ids.length > 1 ? '<span class="dots">' + ids.map(function(x, k){ return '<i class="' + (k ? "" : "on") + '"></i>'; }).join("") + '</span>' : '') +
+            '</button>'
+          : '<button class="nohero" data-addshot="' + g.id + '">Add a picture of what this looks like when you get there.<br>You will see it every time you open this goal.</button>';
+
+        h += '<h2 class="ptitle">' + esc(g.title) + '</h2>';
+        if(g.why) h += '<p class="pwhy">' + esc(g.why) + '</p>';
+
+        h += tgtHTML(g, pct);
+        if(g.target > 0 || st.all.length) h += '<div class="bar"><i style="width:' + pct + '%"></i></div>';
+        h += '<div class="gbtns">' +
+            '<button class="gbtn hot" data-glog="' + g.id + '">' + (g.target > 0 ? "Log where I'm at" : "Put a number on it") + '</button>' +
+            (g.target > 0 ? '<button class="gbtn" data-gtarget="' + g.id + '">Edit target</button>' : '') +
+            '<button class="gbtn" data-addshot="' + g.id + '">+ Picture</button>' +
+          '</div>';
+
+        h += '<div class="sec">' + head("Where you stand", dueLabel(g).replace(" · ", "")) +
+          '<div class="stats">' +
+            statBox("Days in", st.since === null ? "—" : st.since, "since you set it") +
+            statBox("Days you moved it", st.activeDays, st.activeDays === 1 ? "day with something logged" : "days with something logged") +
+            statBox("Cleared", st.done.length, "tasks done for this") +
+            statBox("Last 7 days", st.last7, "things knocked out") +
+          '</div></div>';
+
+        var sp = sparkHTML(g);
+        if(sp) h += '<div class="sec">' + head("The climb", nfmt(g.cur || 0) + (g.unit ? " " + esc(g.unit) : "")) + sp + '</div>';
+
+        var rows = st.done.map(function(t){ return { title: t.title, day: t.doneDay, at: t.doneAt || 0, rep: false }; });
+        st.habits.forEach(function(x){
+          Object.keys(x.log || {}).forEach(function(k){
+            if(x.log[k]) rows.push({ title: x.title, day: k, at: (x.logAt || {})[k] || 0, rep: true });
+          });
+        });
+        rows.sort(function(a, b){
+          if(a.day !== b.day) return (a.day || "") < (b.day || "") ? 1 : -1;
+          return (b.at || 0) - (a.at || 0);
+        });
+        var lim = showAll ? rows.length : 12;
+        h += '<div class="sec">' + head("What you've done", rows.length ? String(rows.length) : "") +
+          (rows.length
+            ? '<div class="log">' + rows.slice(0, lim).map(function(r){
+                return '<div class="logrow' + (r.rep ? " rep" : "") + '"><em>✓</em><s>' + esc(r.title) + '</s><u>' + (r.day ? dayTitle(r.day) : "") + '</u></div>';
+              }).join("") + '</div>' +
+              (rows.length > lim ? '<button class="morebtn" data-gmore="1">Show all ' + rows.length + '</button>' : '')
+            : '<div class="empty">Nothing on the board for this yet. Add a task on the Today tab and tag it with this goal — everything you finish lands here.</div>') +
+        '</div>';
+
+        if(st.open.length){
+          h += '<div class="sec">' + head("Still open", String(st.open.length)) +
+            st.open.map(function(t){
+              return '<div class="item">' +
+                '<button class="box" data-toggle="' + t.id + '" data-kind="task" aria-label="Mark done">' + CHECK + '</button>' +
+                '<div class="txt" data-toggle="' + t.id + '" data-kind="task">' + esc(t.title) +
+                (t.day ? '<span class="meta">' + dayTitle(t.day) + '</span>' : '') +
+                '</div></div>';
+            }).join("") + '</div>';
+        }
+
+        if(st.habits.length){
+          h += '<div class="sec">' + head("On repeat", String(st.habits.length)) +
+            st.habits.map(function(x){
+              var run = habitRun(x), kept = !!(x.log && x.log[TODAY]);
+              return '<div class="item' + (kept ? " done" : "") + '">' +
+                '<button class="box" data-toggle="' + x.id + '" data-kind="habit" aria-label="Mark done">' + CHECK + '</button>' +
+                '<div class="txt" data-toggle="' + x.id + '" data-kind="habit">' + esc(x.title) +
+                '<span class="meta">' + (run > 0 ? run + " day run" : habitDaysLabel(x)) + '</span>' +
+                '</div></div>';
+            }).join("") + '</div>';
+        }
+
+        h += '<div class="sec">' + head("Pictures", ids.length ? String(ids.length) : "") +
+          '<div class="strip">' +
+            ids.map(function(id, k){ return '<button data-gpic="' + k + '"><img src="' + SHOTS[id].src + '" alt=""></button>'; }).join("") +
+            '<button data-addshot="' + g.id + '">+ Add</button>' +
+          '</div></div>';
+
+        h += '</div>';
+        w.innerHTML = h;
+        w.scrollTop = y;
+      }
+
+      w.addEventListener("click", function(ev){
+        if(ev.target.closest("[data-gback]")){ close(); return; }
+        if(ev.target.closest("[data-gmore]")){ showAll = true; paint(); return; }
+        var pic = ev.target.closest("[data-gpic]");
+        if(pic){ openViewer(goalId, +pic.getAttribute("data-gpic")); return; }
+        if(ev.target.closest("[data-gdel]")){
+          if(!armed){
+            armed = true; paint();
+            clearTimeout(armTimer);
+            armTimer = setTimeout(function(){ armed = false; paint(); }, 3500);
+            return;
+          }
+          clearTimeout(armTimer);
+          var g = state.goals.filter(function(x){ return x.id === goalId; })[0];
+          if(g && g.shots) g.shots.forEach(function(sid){ shotDrop(sid); });
+          state.goals = state.goals.filter(function(x){ return x.id !== goalId; });
+          state.tasks.forEach(function(t){ if(t.goalId === goalId) t.goalId = ""; });
+          (state.habits || []).forEach(function(x){ if(x.goalId === goalId) x.goalId = ""; });
+          close(); save(); render();
+          return;
+        }
+      });
+
+      goalRepaint = paint;
+      paint();
+      w.scrollTop = 0;
+    }
+
   function viewGoals(){
     var h = visionBtnHTML() + '<div class="composer">' +
       '<div class="clabel">New goal</div>' +
@@ -1182,19 +1459,7 @@
       h += '<div class="empty">No goals yet. Name one, then hang tasks off it on the Today tab — the bar fills as you clear them.</div>';
       return h;
     }
-    h += state.goals.map(function(g){
-      var all = state.tasks.filter(function(t){ return t.goalId === g.id; });
-      var done = all.filter(function(t){ return t.done; }).length;
-      var pctv = goalPct(g);
-      return '<div class="goal">' +
-          gshotHTML(g) +
-        '<h3>' + esc(g.title) + '</h3>' +
-        (g.why ? '<p class="why">' + esc(g.why) + '</p>' : '') +
-          tgtHTML(g, pctv) +
-        '<div class="bar"><i style="width:' + pctv + '%"></i></div>' +
-        '<div class="goalfoot"><div class="mono">' + done + " of " + all.length + " cleared" + dueLabel(g) + '</div>' +
-        '<button class="rowbtn" data-delgoal="' + g.id + '" aria-label="Delete goal">×</button></div>' + gbtnsHTML(g) + '</div>';
-    }).join("");
+        h += state.goals.map(function(g){ return gcardHTML(g); }).join("");
     return h;
   }
 
@@ -1337,6 +1602,7 @@
       b.setAttribute("aria-selected", String(b.dataset.tab === tab));
     });
     if(timer.running) paintClock();
+      if(goalRepaint) goalRepaint();
   }
 
   /* ---------------- actions ---------------- */
@@ -1422,7 +1688,7 @@
   }
 
   document.addEventListener("click", function(e){
-    var el = e.target.closest("[data-toggle],[data-del],[data-star],[data-when],[data-span],[data-dow],[data-day],[data-edit],[data-more],[role='tab'],[data-delgoal],#addbtn,#goalbtn,#onebtn,#namebtn,#endday,#copyday,#moredays,#backup,#restore,#gear,#rethink,#tstart,#treset,#asknudge,#testnudge,#visionbtn,[data-vopen],[data-addshot],[data-glog],[data-gtarget]");
+    var el = e.target.closest("[data-toggle],[data-del],[data-star],[data-when],[data-span],[data-dow],[data-day],[data-edit],[data-more],[role='tab'],[data-delgoal],#addbtn,#goalbtn,#onebtn,#namebtn,#endday,#copyday,#moredays,#backup,#restore,#gear,#rethink,#tstart,#treset,#asknudge,#testnudge,#visionbtn,[data-vopen],[data-addshot],[data-glog],[data-gtarget],[data-gopen]");
     if(!el) return;
     var d = el.dataset;
 
@@ -1457,6 +1723,7 @@
         if(d.addshot){ addShot(d.addshot); return; }
         if(d.glog){ openLog(d.glog); return; }
         if(d.gtarget){ openTarget(d.gtarget); return; }
+        if(d.gopen){ openGoal(d.gopen); return; }
     if(d.when){ keepDraft(); draft.when = d.when; render(); putDraft(); return; }
     if(el.id === "addbtn"){ addTask(); return; }
     if(el.id === "goalbtn"){
