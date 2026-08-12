@@ -232,6 +232,27 @@
   .sheetbtns button{flex:1; border-radius:11px; padding:12px; font-size:14px; font-weight:600}
   .ghost{border:1px solid var(--line); color:var(--mute)}
   .solid{background:var(--dawn); color:#231402}
+  .chase{margin:0 0 14px}
+  .chase .chlab{font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--dusk); margin-bottom:8px}
+  .chaserow{display:flex; gap:10px; overflow-x:auto; padding-bottom:4px; -webkit-overflow-scrolling:touch}
+  .chasecard{flex:0 0 auto; min-width:156px; max-width:230px; text-align:left; padding:12px 13px; border:1px solid var(--line);
+    border-radius:15px; background:var(--slab); color:var(--noon); font-family:var(--body); display:block}
+  .cctitle{display:block; font-size:12px; color:var(--mute); margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .ccnum{display:flex; align-items:baseline; gap:5px}
+  .ccnum b{font-family:var(--display); font-weight:800; font-size:26px; line-height:1; color:var(--dawn)}
+  .ccnum i{font-style:normal; font-size:12px; color:var(--mute)}
+  .ccnow{display:block; font-size:11.5px; color:var(--dusk); margin:6px 0 7px}
+  .chasecard .bar{display:block; width:100%; height:5px}
+  .scoreboard{margin:2px 0 12px; padding:14px 15px; border:1px solid var(--line); border-radius:16px; background:var(--slab)}
+  .sblab{font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--dusk)}
+  .sbnum{display:flex; align-items:baseline; gap:7px; margin:4px 0 10px; flex-wrap:wrap}
+  .sbnum b{font-family:var(--display); font-weight:800; font-size:44px; line-height:1; color:var(--dawn)}
+  .sbnum span{font-size:14px; color:var(--mute)}
+  .sbrow{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:7px}
+  .sbnow{font-size:13px; color:var(--noon)}
+  .sbpct{font-family:var(--mono); font-size:12px; color:var(--dawn)}
+  .sbgap{margin-top:9px; font-size:12px; color:var(--dusk)}
+  .gnum{font-style:normal; font-weight:700; color:var(--dawn)}
   .linky{background:none; border:0; padding:0; font:inherit; color:var(--dawn); text-decoration:underline; cursor:pointer}
   .toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:var(--slab-2);
     border:1px solid var(--line); color:var(--noon); padding:11px 17px; border-radius:99px; font-size:14px; z-index:9500;
@@ -762,6 +783,7 @@
 
   function viewToday(){
     var h = nudgeBarHTML();
+    h += chaseHTML();
     h += '<div class="timer">' +
       '<div class="clock" id="clock">25:00</div>' +
       '<div class="lab" id="tlab">Focus block — one task, no tabs.</div>' +
@@ -1017,7 +1039,7 @@
       return all.length ? Math.round(done / all.length * 100) : 0;
     }
     function goalNote(g){
-      if(g.target > 0) return nfmt(g.cur || 0) + (goalDown(g) ? " → " : " of ") + nfmt(g.target) + (g.unit ? " " + g.unit : "") + " · " + goalPct(g) + "%";
+      if(g.target > 0) return nfmt(g.cur || 0) + (goalDown(g) ? " → " : " of ") + '<b class="gnum">' + nfmt(g.target) + (g.unit ? " " + esc(g.unit) : "") + '</b>' + " · " + goalPct(g) + "%";
       var all = state.tasks.filter(function(t){ return t.goalId === g.id; });
       if(!all.length) return "no number on it yet";
       return all.filter(function(t){ return t.done; }).length + " of " + all.length + " cleared";
@@ -1044,6 +1066,48 @@
       return '<div class="tgt"><b>' + nfmt(g.cur || 0) + '</b>' +
         '<s>' + (goalDown(g) ? "→ " : "of ") + nfmt(g.target) + (g.unit ? " " + esc(g.unit) : "") + '</s>' +
         '<em>' + pct + '%</em>' + note + '</div>';
+    }
+    function nsep(n){
+      var x = +n || 0;
+      x = Math.round(x * 100) / 100;
+      try{ return x.toLocaleString(); }catch(e){ return String(x); }
+    }
+    function tgtBigHTML(g, pct){
+      if(!(g.target > 0)) return "";
+      var cur = +g.cur || 0, down = goalDown(g), marks = g.marks || [];
+      var gap = down ? cur - g.target : g.target - cur;
+      var unit = g.unit ? " " + esc(g.unit) : "";
+      var note = "";
+      if(marks.length > 1){
+        var first = marks[0], gain = cur - (+first.v || 0), n = daysBetween(first.d, TODAY);
+        if(gain !== 0) note = (gain > 0 ? "+" : "\u2212") + nsep(Math.abs(gain)) + " in " + n + (n === 1 ? " day" : " days");
+      }
+      return '<div class="scoreboard">' +
+        '<div class="sblab">' + (down ? "Getting down to" : "Going for") + '</div>' +
+        '<div class="sbnum"><b>' + nsep(g.target) + '</b>' + (g.unit ? '<span>' + esc(g.unit) + '</span>' : '') + '</div>' +
+        '<div class="sbrow">' +
+          '<span class="sbnow">' + (marks.length ? "You are at " + nsep(cur) + unit : "Nothing logged against it yet") + '</span>' +
+          '<span class="sbpct">' + pct + '%</span>' +
+        '</div>' +
+        '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="sbgap">' + (gap > 0 ? nsep(gap) + unit + " to go" : "You are there \u2014 time for a bigger number") +
+          (note ? ' \u00b7 ' + note : '') + '</div>' +
+      '</div>';
+    }
+    function chaseHTML(){
+      var gs = state.goals.filter(function(g){ return g.target > 0; });
+      if(!gs.length) return "";
+      return '<div class="chase"><div class="chlab">What you are chasing</div><div class="chaserow">' +
+        gs.map(function(g){
+          var pct = goalPct(g), cur = +g.cur || 0, marks = g.marks || [];
+          return '<button class="chasecard" data-gopen="' + g.id + '">' +
+            '<span class="cctitle">' + esc(g.title) + '</span>' +
+            '<span class="ccnum"><b>' + nsep(g.target) + '</b>' + (g.unit ? '<i>' + esc(g.unit) + '</i>' : '') + '</span>' +
+            '<span class="ccnow">' + (marks.length ? "at " + nsep(cur) : "not logged yet") + ' \u00b7 ' + pct + '%</span>' +
+            '<span class="bar"><i style="width:' + pct + '%"></i></span>' +
+          '</button>';
+        }).join('') +
+      '</div></div>';
     }
     function gbtnsHTML(g){
       var ids = goalShots(g);
@@ -1359,8 +1423,8 @@
         h += '<h2 class="ptitle">' + esc(g.title) + '</h2>';
         if(g.why) h += '<p class="pwhy">' + esc(g.why) + '</p>';
 
-        h += tgtHTML(g, pct);
-        if(g.target > 0 || st.all.length) h += '<div class="bar"><i style="width:' + pct + '%"></i></div>';
+        h += tgtBigHTML(g, pct);
+        if(!(g.target > 0) && st.all.length) h += '<div class="bar"><i style="width:' + pct + '%"></i></div>';
         h += '<div class="gbtns">' +
             '<button class="gbtn hot" data-glog="' + g.id + '">' + (g.target > 0 ? "Log where I'm at" : "Put a number on it") + '</button>' +
             (g.target > 0 ? '<button class="gbtn" data-gtarget="' + g.id + '">Edit target</button>' : '') +
@@ -2101,7 +2165,7 @@
   function timerReset(){ clearInterval(timer.id); timer.running = false; timer.left = 25*60; paintClock(); }
 
   /* ---------------- boot ---------------- */
-  var BUILD = "v14";
+  var BUILD = "v15";
   var lastCheck = 0, taking = false;
   function liveBuild(){
     return fetch("sw.js?ts=" + Date.now(), { cache: "no-store" })
