@@ -218,7 +218,7 @@
     font-family:var(--mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--dusk);
     background:rgba(142,123,255,.08)}
   .endday:hover{background:rgba(142,123,255,.16)}
-  .scrim{position:fixed; left:0; right:0; top:0; height:100%; background:rgba(8,6,18,.78); display:flex; padding:18px; z-index:90; overflow-y:auto; overscroll-behavior:contain}
+  .scrim{position:fixed; left:0; right:0; top:0; height:100%; background:rgba(8,6,18,.78); display:flex; padding:18px; z-index:9000; overflow-y:auto; overscroll-behavior:contain}
   .sheet{width:100%; max-width:460px; margin:auto; background:var(--slab); border:1px solid var(--line);
     border-radius:18px; padding:20px}
   .sheet h2{font-family:var(--display); font-weight:800; font-size:23px; margin:8px 0 4px; letter-spacing:-.02em}
@@ -232,8 +232,9 @@
   .sheetbtns button{flex:1; border-radius:11px; padding:12px; font-size:14px; font-weight:600}
   .ghost{border:1px solid var(--line); color:var(--mute)}
   .solid{background:var(--dawn); color:#231402}
+  .linky{background:none; border:0; padding:0; font:inherit; color:var(--dawn); text-decoration:underline; cursor:pointer}
   .toast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%); background:var(--slab-2);
-    border:1px solid var(--line); color:var(--noon); padding:11px 17px; border-radius:99px; font-size:14px; z-index:95;
+    border:1px solid var(--line); color:var(--noon); padding:11px 17px; border-radius:99px; font-size:14px; z-index:9500;
     box-shadow:0 10px 34px rgba(0,0,0,.5); display:flex; align-items:center; gap:12px; max-width:90vw}
   .toast .undo{font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase;
     color:var(--dawn); border:1px solid rgba(255,158,74,.4); border-radius:99px; padding:5px 11px; flex:none}
@@ -2003,12 +2004,25 @@
       '<p class="setnote">Your day rolls over at <b>4am</b>, not midnight — a late night still counts as the same day.</p>' +
       '<p class="setnote">A day counts toward your streak when you clear at least one thing <b>and</b> finish 60% of what was on the board. An empty board doesn\'t count.</p>' +
       '<p class="setnote">Everything is stored in this browser only. Back it up from the Momentum tab now and then.</p>' +
+      '<div class="mono" style="margin-top:18px">Version</div>' +
+      '<p class="setnote">This app is build <b id="sbuild">' + BUILD + '</b>. <button type="button" class="linky" id="supd">Check for a newer one</button></p>' +
       '<div class="sheetbtns"><button class="ghost" id="scancel">Cancel</button>' +
       '<button class="solid" id="ssave">Save</button></div></div>';
     document.body.appendChild(wrap);
     var ni = wrap.querySelector("#sname");
     ni.value = state.name || ""; ni.focus();
     wrap.querySelector("#scancel").onclick = function(){ wrap.remove(); };
+    var ub = wrap.querySelector("#supd");
+    if(ub) ub.onclick = function(){
+      ub.textContent = "Checking\u2026";
+      liveBuild().then(function(v){
+        if(!v){ ub.textContent = "No signal \u2014 try again on wifi"; return; }
+        if(v === BUILD){ ub.textContent = "Already the newest one"; return; }
+        ub.textContent = "New build " + v + " \u2014 loading it\u2026";
+        try{ sessionStorage.removeItem("mom:got"); }catch(e){}
+        takeUpdate();
+      }).catch(function(){ ub.textContent = "No signal \u2014 try again on wifi"; });
+    };
     wrap.addEventListener("click", function(ev){ if(ev.target === wrap) wrap.remove(); });
     wrap.querySelector("#ssave").onclick = function(){
       state.name = ni.value.trim().slice(0,24);
@@ -2087,11 +2101,48 @@
   function timerReset(){ clearInterval(timer.id); timer.running = false; timer.left = 25*60; paintClock(); }
 
   /* ---------------- boot ---------------- */
+  var BUILD = "v14";
+  var lastCheck = 0, taking = false;
+  function liveBuild(){
+    return fetch("sw.js?ts=" + Date.now(), { cache: "no-store" })
+      .then(function(r){ return r.text(); })
+      .then(function(txt){ var m = txt.match(/momentum-(v\d+)/); return m ? m[1] : null; });
+  }
+  function takeUpdate(){
+    if(taking) return;
+    taking = true;
+    if(navigator.serviceWorker && navigator.serviceWorker.getRegistration){
+      navigator.serviceWorker.getRegistration()
+        .then(function(reg){ if(reg && reg.update) reg.update(); })
+        .catch(function(){})
+        .then(function(){ setTimeout(function(){ location.reload(); }, 700); });
+    } else {
+      location.reload();
+    }
+  }
+  function pullUpdate(){
+    var now = Date.now();
+    if(taking || now - lastCheck < 20000) return;
+    lastCheck = now;
+    liveBuild().then(function(v){
+      if(!v || v === BUILD) return;
+      try{
+        if(sessionStorage.getItem("mom:got") === v) return;
+        sessionStorage.setItem("mom:got", v);
+      }catch(e){}
+      takeUpdate();
+    }).catch(function(){});
+  }
   if("serviceWorker" in navigator && location.protocol.indexOf("http") === 0){
     window.addEventListener("load", function(){
       navigator.serviceWorker.register("sw.js").catch(function(){ /* offline mode unavailable */ });
+      pullUpdate();
     });
+    document.addEventListener("visibilitychange", function(){ if(!document.hidden) pullUpdate(); });
+    window.addEventListener("pageshow", function(){ pullUpdate(); });
+    window.addEventListener("focus", function(){ pullUpdate(); });
   }
+  bindVV();
 
   (async function(){
     await load();
