@@ -275,6 +275,43 @@
   .box, .rowbtn, .gear{position:relative}
   .box::after, .rowbtn::after, .gear::after{content:""; position:absolute; top:50%; left:50%;
     transform:translate(-50%,-50%); width:44px; height:44px; border-radius:50%}
+
+    /* ----------- vision board ----------- */
+    .gshot{display:block; position:relative; width:calc(100% + 30px); margin:-15px -15px 13px; padding:0; border:0; background:var(--slab-2); overflow:hidden; border-radius:13px 13px 0 0; -webkit-tap-highlight-color:transparent}
+    .gshot img{display:block; width:100%; height:158px; object-fit:cover}
+    .gshot .veil{position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(6,8,14,.8))}
+    .gshot .cue{position:absolute; left:13px; right:52px; bottom:10px; text-align:left; font-size:11.5px; color:#fff; opacity:.9; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+    .gshot .dots{position:absolute; right:12px; bottom:12px; display:flex; gap:4px}
+    .gshot .dots i{width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.4)}
+    .gshot .dots i.on{background:#fff}
+    .tgt{display:flex; align-items:baseline; flex-wrap:wrap; gap:7px; margin:0 0 9px}
+    .tgt b{font-family:var(--display); font-weight:800; font-size:27px; line-height:1; color:var(--noon)}
+    .tgt s{text-decoration:none; font-size:13px; color:var(--mute)}
+    .tgt em{font-style:normal; margin-left:auto; font-size:12px; color:var(--dawn)}
+    .tgt u{flex-basis:100%; text-decoration:none; font-size:11.5px; color:var(--dawn)}
+    .gbtns{display:flex; gap:7px; flex-wrap:wrap; margin-top:12px}
+    .gbtn{flex:1 1 auto; min-height:40px; padding:10px 12px; border:1px solid var(--line); border-radius:99px; background:transparent; color:var(--noon); font-family:var(--body); font-size:12.5px; white-space:nowrap}
+    .gbtn.hot{border-color:var(--dawn); color:var(--dawn)}
+    .vbtn{display:block; width:100%; min-height:48px; margin:0 0 14px; padding:13px; border:1px solid var(--line); border-radius:13px; background:linear-gradient(160deg, var(--slab-2), var(--slab)); color:var(--noon); font-family:var(--display); font-weight:800; font-size:15px}
+    .vbtn span{display:block; font-family:var(--body); font-weight:400; font-size:11.5px; color:var(--mute); margin-top:3px}
+    .board{position:fixed; inset:0; z-index:60; background:var(--ink); overflow-y:auto; -webkit-overflow-scrolling:touch; padding:calc(env(safe-area-inset-top) + 18px) 16px calc(env(safe-area-inset-bottom) + 30px)}
+    .bhead{display:flex; align-items:center; gap:10px; margin-bottom:14px}
+    .bhead h2{flex:1; font-family:var(--display); font-weight:800; font-size:22px; margin:0}
+    .bgrid{display:grid; grid-template-columns:repeat(2,1fr); gap:9px}
+    .bcell{display:block; position:relative; width:100%; height:0; padding:0 0 132% 0; border:0; border-radius:13px; overflow:hidden; background:var(--slab-2)}
+    .bcell img{position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover}
+    .bcell .veil{position:absolute; left:0; top:0; right:0; bottom:0; background:linear-gradient(180deg,rgba(0,0,0,0) 38%,rgba(6,8,14,.85))}
+    .bcell u{position:absolute; left:10px; right:10px; bottom:9px; text-decoration:none; display:block; text-align:left; font-family:var(--display); font-weight:800; font-size:13px; color:#fff; line-height:1.25}
+    .bcell u i{display:block; font-style:normal; font-family:var(--body); font-weight:400; font-size:11px; color:var(--dawn); margin-top:3px}
+    .viewer{position:fixed; inset:0; z-index:70; background:#05070c; display:flex; flex-direction:column; padding:calc(env(safe-area-inset-top) + 8px) 0 calc(env(safe-area-inset-bottom) + 14px)}
+    .vstage{flex:1 1 auto; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; min-height:0}
+    .vstage img{max-width:100%; max-height:100%; object-fit:contain}
+    .vtap{position:absolute; top:0; bottom:0; width:30%; background:transparent; border:0}
+    .vmeta{flex:0 0 auto; padding:14px 18px 0}
+    .vmeta h3{font-family:var(--display); font-weight:800; font-size:21px; margin:0 0 5px}
+    .vmeta p{font-size:13px; color:var(--mute); margin:0 0 10px; line-height:1.5}
+    .vclose{position:absolute; right:13px; top:calc(env(safe-area-inset-top) + 13px); z-index:3; width:40px; height:40px; border-radius:50%; border:0; background:rgba(255,255,255,.14); color:#fff; font-size:16px}
+    .vrow{flex:0 0 auto; display:flex; gap:7px; padding:12px 18px 0; flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -811,8 +848,326 @@
     return n;
   }
 
+
+    /* ----------- vision: pictures of where this is going -----------
+       Photos live in IndexedDB, not localStorage, so the day-to-day
+       state stays small and quick to save. */
+    var SHOTS = {};
+    var shotDB = null;
+    function visionOpen(){
+      if(shotDB) return Promise.resolve(shotDB);
+      return new Promise(function(res){
+        var rq;
+        try{ rq = indexedDB.open("momentum-vision", 1); }catch(e){ res(null); return; }
+        rq.onupgradeneeded = function(){ try{ rq.result.createObjectStore("shots", { keyPath:"id" }); }catch(e){} };
+        rq.onsuccess = function(){ shotDB = rq.result; res(shotDB); };
+        rq.onerror = function(){ res(null); };
+      });
+    }
+    function shotsLoad(){
+      return visionOpen().then(function(db){
+        if(!db) return;
+        return new Promise(function(res){
+          var rq;
+          try{ rq = db.transaction("shots", "readonly").objectStore("shots").getAll(); }catch(e){ res(); return; }
+          rq.onsuccess = function(){ (rq.result || []).forEach(function(r){ SHOTS[r.id] = r; }); res(); };
+          rq.onerror = function(){ res(); };
+        });
+      }).catch(function(){});
+    }
+    function shotPut(rec){
+      SHOTS[rec.id] = rec;
+      return visionOpen().then(function(db){
+        if(!db) return;
+        try{ db.transaction("shots", "readwrite").objectStore("shots").put(rec); }catch(e){}
+      });
+    }
+    function shotDrop(id){
+      delete SHOTS[id];
+      return visionOpen().then(function(db){
+        if(!db) return;
+        try{ db.transaction("shots", "readwrite").objectStore("shots").delete(id); }catch(e){}
+      });
+    }
+    function shrinkImage(file){
+      return new Promise(function(res, rej){
+        var fr = new FileReader();
+        fr.onerror = function(){ rej(); };
+        fr.onload = function(){
+          var im = new Image();
+          im.onerror = function(){ rej(); };
+          im.onload = function(){
+            var w = im.naturalWidth || im.width, h = im.naturalHeight || im.height;
+            if(!w || !h){ rej(); return; }
+            var s = Math.min(1, 1100 / Math.max(w, h));
+            var c = document.createElement("canvas");
+            c.width = Math.max(1, Math.round(w * s)); c.height = Math.max(1, Math.round(h * s));
+            c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+            var q = 0.74, out = c.toDataURL("image/jpeg", q);
+            while(out.length > 900000 && q > 0.38){ q -= 0.12; out = c.toDataURL("image/jpeg", q); }
+            res(out);
+          };
+          im.src = fr.result;
+        };
+        fr.readAsDataURL(file);
+      });
+    }
+    function addShot(goalId){
+      var g = state.goals.filter(function(x){ return x.id === goalId; })[0];
+      if(!g) return;
+      var inp = document.createElement("input");
+      inp.type = "file"; inp.accept = "image/*";
+      inp.style.position = "fixed"; inp.style.left = "-9999px";
+      inp.onchange = function(){
+        var f = inp.files && inp.files[0];
+        if(!f){ inp.remove(); return; }
+        toast("Saving picture…");
+        shrinkImage(f).then(function(src){
+          var rec = { id: uid(), src: src, t: Date.now(), day: TODAY, cap: "" };
+          return shotPut(rec).then(function(){
+            g.shots = g.shots || [];
+            g.shots.unshift(rec.id);
+            save(); render();
+            toast("Pinned to your vision.");
+          });
+        }).catch(function(){
+          toast("Couldn't read that picture.");
+        }).then(function(){ inp.remove(); });
+      };
+      document.body.appendChild(inp);
+      inp.click();
+    }
+    function goalShots(g){
+      return (g.shots || []).filter(function(id){ return SHOTS[id]; });
+    }
+    function anyShots(){
+      return state.goals.some(function(g){ return goalShots(g).length; });
+    }
+    function nfmt(n){
+      n = +n || 0;
+      var a = Math.abs(n);
+      if(a >= 1000000) return (n / 1000000).toFixed(a < 10000000 ? 1 : 0).replace(/\.0$/, "") + "M";
+      if(a >= 1000) return (n / 1000).toFixed(a < 100000 ? 1 : 0).replace(/\.0$/, "") + "K";
+      return String(Math.round(n * 10) / 10);
+    }
+    function goalPct(g){
+      if(g.target > 0) return Math.max(0, Math.min(100, Math.round((+g.cur || 0) / g.target * 100)));
+      var all = state.tasks.filter(function(t){ return t.goalId === g.id; });
+      var done = all.filter(function(t){ return t.done; }).length;
+      return all.length ? Math.round(done / all.length * 100) : 0;
+    }
+    function goalNote(g){
+      if(g.target > 0) return nfmt(g.cur || 0) + " of " + nfmt(g.target) + (g.unit ? " " + g.unit : "") + " · " + goalPct(g) + "%";
+      var all = state.tasks.filter(function(t){ return t.goalId === g.id; });
+      if(!all.length) return "no number on it yet";
+      return all.filter(function(t){ return t.done; }).length + " of " + all.length + " cleared";
+    }
+    function gshotHTML(g){
+      var ids = goalShots(g);
+      if(!ids.length) return "";
+      return '<button class="gshot" data-vopen="' + g.id + '" aria-label="Open the pictures for ' + esc(g.title) + '">' +
+        '<img src="' + SHOTS[ids[0]].src + '" alt="" loading="lazy">' +
+        '<span class="veil"></span>' +
+        (SHOTS[ids[0]].cap ? '<span class="cue">' + esc(SHOTS[ids[0]].cap) + '</span>' : '') +
+        (ids.length > 1
+          ? '<span class="dots">' + ids.map(function(x, k){ return '<i class="' + (k ? "" : "on") + '"></i>'; }).join("") + '</span>'
+          : '') +
+        '</button>';
+    }
+    function tgtHTML(g, pct){
+      if(!(g.target > 0)) return "";
+      var marks = g.marks || [], note = "";
+      if(marks.length > 1){
+        var first = marks[0], gain = (+g.cur || 0) - (+first.v || 0), n = daysBetween(first.d, TODAY);
+        if(gain !== 0 && n > 0) note = '<u>' + (gain > 0 ? "+" : "−") + nfmt(Math.abs(gain)) + " in " + n + (n === 1 ? " day" : " days") + '</u>';
+      }
+      return '<div class="tgt"><b>' + nfmt(g.cur || 0) + '</b>' +
+        '<s>of ' + nfmt(g.target) + (g.unit ? " " + esc(g.unit) : "") + '</s>' +
+        '<em>' + pct + '%</em>' + note + '</div>';
+    }
+    function gbtnsHTML(g){
+      var ids = goalShots(g);
+      return '<div class="gbtns">' +
+        '<button class="gbtn" data-addshot="' + g.id + '">' + (ids.length ? "+ Picture" : "Add a picture") + '</button>' +
+        '<button class="gbtn' + (g.target > 0 ? " hot" : "") + '" data-glog="' + g.id + '">' + (g.target > 0 ? "Log where I'm at" : "Set a number") + '</button>' +
+        (g.target > 0 ? '<button class="gbtn" data-gtarget="' + g.id + '">Edit target</button>' : '') +
+        '</div>';
+    }
+    function visionBtnHTML(){
+      if(!anyShots()) return "";
+      var n = state.goals.reduce(function(a, g){ return a + goalShots(g).length; }, 0);
+      return '<button class="vbtn" id="visionbtn">Open the vision board' +
+        '<span>' + n + (n === 1 ? " picture" : " pictures") + ' of where this is going</span></button>';
+    }
+    function sheetOpen(inner, wire){
+      var wrap = document.createElement("div");
+      wrap.className = "scrim";
+      wrap.innerHTML = '<div class="sheet">' + inner + '</div>';
+      document.body.appendChild(wrap);
+      wrap.addEventListener("click", function(ev){ if(ev.target === wrap) wrap.remove(); });
+      var x = wrap.querySelector("[data-close]");
+      if(x) x.onclick = function(){ wrap.remove(); };
+      if(wire) wire(wrap);
+      return wrap;
+    }
+    function openTarget(goalId){
+      var g = state.goals.filter(function(x){ return x.id === goalId; })[0];
+      if(!g) return;
+      var w = sheetOpen(
+        '<div class="mono">Put a number on it</div>' +
+        '<div class="fieldrow" style="margin-top:12px">' +
+          '<label class="fl"><span>Aim for</span><input type="number" id="tgnum" inputmode="decimal" placeholder="20000" value="' + (g.target > 0 ? g.target : "") + '"></label>' +
+          '<label class="fl"><span>Unit</span><input type="text" id="tgunit" maxlength="10" placeholder="$/mo" value="' + esc(g.unit || "") + '"></label>' +
+        '</div>' +
+        '<p class="why" style="margin:12px 0 0">Dollars a month, kilos on the bar, clients signed — anything you can count. Leave it empty to go back to tracking by tasks.</p>' +
+        '<div class="sheetbtns"><button class="ghost" data-close="1">Cancel</button><button class="solid" id="tgsave">Save target</button></div>',
+        function(w){
+          w.querySelector("#tgsave").onclick = function(){
+            var n = parseFloat(w.querySelector("#tgnum").value);
+            g.target = isFinite(n) && n > 0 ? n : 0;
+            g.unit = w.querySelector("#tgunit").value.trim().slice(0, 10);
+            if(g.cur == null) g.cur = 0;
+            w.remove(); save(); render();
+          };
+        }
+      );
+      setTimeout(function(){ var f = w.querySelector("#tgnum"); if(f) f.focus(); }, 40);
+    }
+    function openLog(goalId){
+      var g = state.goals.filter(function(x){ return x.id === goalId; })[0];
+      if(!g) return;
+      if(!(g.target > 0)){ openTarget(goalId); return; }
+      var w = sheetOpen(
+        '<div class="mono">Where are you right now?</div>' +
+        '<input type="number" id="lgnum" class="bigin" inputmode="decimal" value="' + (+g.cur || 0) + '">' +
+        '<p class="why" style="margin:10px 0 0">Target is ' + esc(nfmt(g.target) + (g.unit ? " " + g.unit : "")) + '. Honest beats flattering.</p>' +
+        '<div class="sheetbtns"><button class="ghost" data-close="1">Cancel</button><button class="solid" id="lgsave">Log it</button></div>',
+        function(w){
+          w.querySelector("#lgsave").onclick = function(){
+            var n = parseFloat(w.querySelector("#lgnum").value);
+            if(!isFinite(n)){ w.remove(); return; }
+            var was = goalPct(g);
+            g.cur = n;
+            g.marks = g.marks || [];
+            var same = g.marks.filter(function(m){ return m.d === TODAY; })[0];
+            if(same) same.v = n; else g.marks.push({ d: TODAY, v: n });
+            if(g.marks.length > 400) g.marks = g.marks.slice(-400);
+            w.remove(); save(); render();
+            var now = goalPct(g);
+            if(now >= 100 && was < 100) toast("Target hit. Set a bigger one.");
+            else if(now > was) toast("Closer than yesterday.");
+            else toast("Logged.");
+          };
+        }
+      );
+      setTimeout(function(){ var f = w.querySelector("#lgnum"); if(f){ f.focus(); f.select(); } }, 40);
+    }
+    function shotAge(r){
+      if(!r || !r.day) return "Pinned";
+      var n = daysBetween(r.day, TODAY);
+      if(n <= 0) return "Pinned today";
+      if(n === 1) return "Pinned yesterday";
+      return "Pinned " + n + " days ago";
+    }
+    function openBoard(){
+      var list = [];
+      state.goals.forEach(function(g){ goalShots(g).forEach(function(id){ list.push({ g: g, id: id }); }); });
+      var w = document.createElement("div");
+      w.className = "board";
+      w.innerHTML = '<div class="bhead"><h2>Vision</h2><button class="rowbtn" id="bclose">Close</button></div>' +
+        (list.length
+          ? '<div class="bgrid">' + list.map(function(s, i){
+              return '<button class="bcell" data-vcell="' + i + '">' +
+                '<img src="' + SHOTS[s.id].src + '" alt="' + esc(s.g.title) + '">' +
+                '<span class="veil"></span>' +
+                '<u>' + esc(s.g.title) + '<i>' + goalNote(s.g) + '</i></u></button>';
+            }).join("") + '</div>'
+          : '<div class="empty">Nothing pinned yet. Open a goal and add a picture of what it looks like when you get there.</div>');
+      document.body.appendChild(w);
+      w.querySelector("#bclose").onclick = function(){ w.remove(); };
+      w.addEventListener("click", function(ev){
+        var c = ev.target.closest("[data-vcell]");
+        if(!c) return;
+        var s = list[+c.getAttribute("data-vcell")];
+        if(s) openViewer(s.g.id, goalShots(s.g).indexOf(s.id));
+      });
+    }
+    function openViewer(goalId, idx){
+      var g = state.goals.filter(function(x){ return x.id === goalId; })[0];
+      if(!g || !goalShots(g).length) return;
+      var i = Math.max(0, idx || 0), armed = false, armTimer = null;
+      var w = document.createElement("div");
+      w.className = "viewer";
+      document.body.appendChild(w);
+      function paint(){
+        var ids = goalShots(g);
+        if(!ids.length){ w.remove(); render(); return; }
+        if(i >= ids.length) i = ids.length - 1;
+        var rec = SHOTS[ids[i]], pct = goalPct(g);
+        w.innerHTML =
+          '<button class="vclose" id="vx" aria-label="Close">✕</button>' +
+          '<div class="vstage"><img src="' + rec.src + '" alt="' + esc(rec.cap || g.title) + '">' +
+            (ids.length > 1
+              ? '<button class="vtap" style="left:0" data-vstep="-1" aria-label="Previous picture"></button>' +
+                '<button class="vtap" style="right:0" data-vstep="1" aria-label="Next picture"></button>'
+              : '') +
+          '</div>' +
+          '<div class="vmeta"><h3>' + esc(g.title) + '</h3>' +
+            (rec.cap ? '<p>' + esc(rec.cap) + '</p>' : (g.why ? '<p>' + esc(g.why) + '</p>' : '')) +
+            tgtHTML(g, pct) +
+            '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
+            '<div class="goalfoot"><div class="mono">' + (ids.length > 1 ? (i + 1) + " of " + ids.length + " · " : "") + shotAge(rec) + '</div></div>' +
+          '</div>' +
+          '<div class="vrow">' +
+            '<button class="gbtn" data-vcap="1">' + (rec.cap ? "Edit note" : "Add a note") + '</button>' +
+            (ids.length > 1 ? '<button class="gbtn" data-vfirst="1">Make it the cover</button>' : '') +
+            '<button class="gbtn" data-vdel="1">' + (armed ? "Tap again to remove" : "Remove") + '</button>' +
+          '</div>';
+      }
+      paint();
+      w.addEventListener("click", function(ev){
+        var ids = goalShots(g);
+        if(ev.target.id === "vx"){ w.remove(); return; }
+        var st = ev.target.closest("[data-vstep]");
+        if(st){ armed = false; i = (i + (+st.getAttribute("data-vstep")) + ids.length) % ids.length; paint(); return; }
+        if(ev.target.closest("[data-vcap]")){
+          var cur = SHOTS[ids[i]];
+          sheetOpen('<div class="mono">Note on this picture</div>' +
+            '<input type="text" id="vcapin" class="bigin" maxlength="90" value="' + esc(cur.cap || "") + '" placeholder="Feb 2026 — day one">' +
+            '<div class="sheetbtns"><button class="ghost" data-close="1">Cancel</button><button class="solid" id="vcapok">Save</button></div>',
+            function(sw){
+              sw.querySelector("#vcapok").onclick = function(){
+                cur.cap = sw.querySelector("#vcapin").value.trim().slice(0, 90);
+                shotPut(cur); sw.remove(); paint(); render();
+              };
+            });
+          return;
+        }
+        if(ev.target.closest("[data-vfirst]")){
+          var id = ids[i];
+          g.shots = [id].concat((g.shots || []).filter(function(x){ return x !== id; }));
+          i = 0; armed = false; save(); paint(); render(); toast("That's the cover now.");
+          return;
+        }
+        if(ev.target.closest("[data-vdel]")){
+          if(!armed){
+            armed = true; paint();
+            clearTimeout(armTimer);
+            armTimer = setTimeout(function(){ armed = false; paint(); }, 3500);
+            return;
+          }
+          armed = false; clearTimeout(armTimer);
+          var gone = ids[i];
+          g.shots = (g.shots || []).filter(function(x){ return x !== gone; });
+          shotDrop(gone);
+          save(); paint(); render();
+          return;
+        }
+      });
+    }
+
   function viewGoals(){
-    var h = '<div class="composer">' +
+    var h = visionBtnHTML() + '<div class="composer">' +
       '<div class="clabel">New goal</div>' +
       '<input type="text" id="newgoal" placeholder="A goal worth chasing" maxlength="80">' +
       '<input type="text" id="newwhy" placeholder="Why it matters (optional)" maxlength="110">' +
@@ -830,13 +1185,15 @@
     h += state.goals.map(function(g){
       var all = state.tasks.filter(function(t){ return t.goalId === g.id; });
       var done = all.filter(function(t){ return t.done; }).length;
-      var pctv = all.length ? Math.round(done/all.length*100) : 0;
+      var pctv = goalPct(g);
       return '<div class="goal">' +
+          gshotHTML(g) +
         '<h3>' + esc(g.title) + '</h3>' +
         (g.why ? '<p class="why">' + esc(g.why) + '</p>' : '') +
+          tgtHTML(g, pctv) +
         '<div class="bar"><i style="width:' + pctv + '%"></i></div>' +
         '<div class="goalfoot"><div class="mono">' + done + " of " + all.length + " cleared" + dueLabel(g) + '</div>' +
-        '<button class="rowbtn" data-delgoal="' + g.id + '" aria-label="Delete goal">×</button></div></div>';
+        '<button class="rowbtn" data-delgoal="' + g.id + '" aria-label="Delete goal">×</button></div>' + gbtnsHTML(g) + '</div>';
     }).join("");
     return h;
   }
@@ -1065,7 +1422,7 @@
   }
 
   document.addEventListener("click", function(e){
-    var el = e.target.closest("[data-toggle],[data-del],[data-star],[data-when],[data-span],[data-dow],[data-day],[data-edit],[data-more],[role='tab'],[data-delgoal],#addbtn,#goalbtn,#onebtn,#namebtn,#endday,#copyday,#moredays,#backup,#restore,#gear,#rethink,#tstart,#treset,#asknudge,#testnudge");
+    var el = e.target.closest("[data-toggle],[data-del],[data-star],[data-when],[data-span],[data-dow],[data-day],[data-edit],[data-more],[role='tab'],[data-delgoal],#addbtn,#goalbtn,#onebtn,#namebtn,#endday,#copyday,#moredays,#backup,#restore,#gear,#rethink,#tstart,#treset,#asknudge,#testnudge,#visionbtn,[data-vopen],[data-addshot],[data-glog],[data-gtarget]");
     if(!el) return;
     var d = el.dataset;
 
@@ -1089,10 +1446,17 @@
     if(d.edit){ openEditor(d.edit, d.kind); return; }
     if(d.more){ openRowMenu(d.more, d.kind); return; }
     if(d.delgoal){
+          var goneG = state.goals.filter(function(g){ return g.id === d.delgoal; })[0];
+          if(goneG && goneG.shots) goneG.shots.forEach(function(sid){ shotDrop(sid); });
       state.goals = state.goals.filter(function(g){ return g.id !== d.delgoal; });
       state.tasks.forEach(function(t){ if(t.goalId === d.delgoal) t.goalId = ""; });
       save(); render(); return;
     }
+        if(el.id === "visionbtn"){ openBoard(); return; }
+        if(d.vopen){ openViewer(d.vopen, 0); return; }
+        if(d.addshot){ addShot(d.addshot); return; }
+        if(d.glog){ openLog(d.glog); return; }
+        if(d.gtarget){ openTarget(d.gtarget); return; }
     if(d.when){ keepDraft(); draft.when = d.when; render(); putDraft(); return; }
     if(el.id === "addbtn"){ addTask(); return; }
     if(el.id === "goalbtn"){
@@ -1448,6 +1812,7 @@
 
   (async function(){
     await load();
+      await shotsLoad();
     rollover();
     render();
     sweep();
