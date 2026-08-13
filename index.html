@@ -1672,10 +1672,12 @@
       }).join("") + '</div></div>';
 
     h += historyHTML();
-    h += '<div class="sec">' + head("Your data", "on this phone only") +
-      '<div class="empty" style="text-align:left">Momentum keeps everything in this browser. Clearing Safari\'s website data would erase it. Copy a backup now and then — it\'s plain text you can paste into a note or email to yourself.</div>' +
-      '<button class="copyday" id="backup">Copy a backup</button>' +
-      '<button class="copyday" id="restore">Restore from a backup</button></div>';
+    h += '<div class="sec">' + head("Your data", "on this device only") +
+      '<div class="empty" style="text-align:left">Momentum keeps everything in this browser on this device. Clearing your browser\'s website data would erase it. The text backup carries your goals, tasks, streaks and history. The file backup carries your pictures as well — use that one to move to another device.</div>' +
+      '<button class="copyday" id="backup">Copy a backup (text)</button>' +
+      '<button class="copyday" id="restore">Restore from text</button>' +
+      '<button class="copyday" id="backupfile">Save a full backup file (with pictures)</button>' +
+      '<button class="copyday" id="restorefile">Load a backup file</button></div>';
     return h;
   }
 
@@ -1774,7 +1776,7 @@
   }
 
   document.addEventListener("click", function(e){
-    var el = e.target.closest("[data-toggle],[data-del],[data-star],[data-when],[data-span],[data-dow],[data-day],[data-edit],[data-more],[role='tab'],[data-delgoal],#addbtn,#goalbtn,#onebtn,#namebtn,#endday,#copyday,#moredays,#backup,#restore,#gear,#rethink,#tstart,#treset,#asknudge,#testnudge,#visionbtn,[data-vopen],[data-addshot],[data-glog],[data-gtarget],[data-gopen]");
+    var el = e.target.closest("[data-toggle],[data-del],[data-star],[data-when],[data-span],[data-dow],[data-day],[data-edit],[data-more],[role='tab'],[data-delgoal],#addbtn,#goalbtn,#onebtn,#namebtn,#endday,#copyday,#moredays,#backup,#restore,#backupfile,#restorefile,#gear,#rethink,#tstart,#treset,#asknudge,#testnudge,#visionbtn,[data-vopen],[data-addshot],[data-glog],[data-gtarget],[data-gopen]");
     if(!el) return;
     var d = el.dataset;
 
@@ -1853,6 +1855,8 @@
     if(el.id === "rethink"){ delete state.oneThing[TODAY]; save(); render(); return; }
     if(el.id === "backup"){ doBackup(); return; }
     if(el.id === "restore"){ doRestore(); return; }
+    if(el.id === "backupfile"){ doBackupFile(); return; }
+    if(el.id === "restorefile"){ doRestoreFile(); return; }
     if(el.id === "tstart"){ timerToggle(); return; }
     if(el.id === "treset"){ timerReset(); return; }
   });
@@ -1920,6 +1924,69 @@
         .catch(function(){ showText(text); });
     } else { showText(text); }
   }
+  function fullPack(){
+    var shots = [], ids = Object.keys(SHOTS);
+    for(var i = 0; i < ids.length; i++){ if(SHOTS[ids[i]]) shots.push(SHOTS[ids[i]]); }
+    return { app:"momentum", v:1, saved:new Date().toISOString(), state:state, shots:shots };
+  }
+  function doBackupFile(){
+    try{
+      var blob = new Blob([JSON.stringify(fullPack())], { type:"application/json" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "momentum-backup-" + TODAY + ".json";
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function(){ try{ document.body.removeChild(a); }catch(e){} URL.revokeObjectURL(url); }, 4000);
+      var n = Object.keys(SHOTS).length;
+      toast(n ? "Backup saved — " + n + " picture" + (n === 1 ? "" : "s") + " included." : "Backup saved.");
+    }catch(e){ toast("Could not save the file."); }
+  }
+  function doRestoreFile(){
+    var inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = "application/json,.json,text/plain";
+    inp.style.display = "none";
+    document.body.appendChild(inp);
+    inp.onchange = function(){
+      var f = inp.files && inp.files[0];
+      try{ document.body.removeChild(inp); }catch(e){}
+      if(!f) return;
+      var fr = new FileReader();
+      fr.onerror = function(){ toast("Could not read that file."); };
+      fr.onload = function(){
+        var pack;
+        try{ pack = JSON.parse(String(fr.result)); }
+        catch(e){ toast("That isn't a Momentum backup."); return; }
+        applyPack(pack);
+      };
+      fr.readAsText(f);
+    };
+    inp.click();
+  }
+  function applyPack(pack){
+    var st = (pack && pack.state) ? pack.state : pack;
+    if(!st || !Array.isArray(st.tasks) || !Array.isArray(st.habits)){
+      toast("That isn't a Momentum backup."); return;
+    }
+    var shots = (pack && Array.isArray(pack.shots)) ? pack.shots : [];
+    state = Object.assign({ name:"", habits:[], tasks:[], goals:[], history:{}, oneThing:{},
+      lastActive:TODAY, briefSeen:{}, totalDone:0, bestStreak:0 }, st);
+    state.lastActive = TODAY;
+    save();
+    var chain = Promise.resolve(), kept = 0;
+    shots.forEach(function(rec){
+      if(!rec || !rec.id || !rec.src) return;
+      kept++;
+      chain = chain.then(function(){ return shotPut(rec); });
+    });
+    chain.catch(function(){}).then(function(){
+      render();
+      toast(kept ? "Restored — " + kept + " picture" + (kept === 1 ? "" : "s") + " too." : "Restored.");
+    });
+  }
   function doRestore(){
     var wrap = document.createElement("div");
     wrap.className = "scrim";
@@ -1937,14 +2004,8 @@
       var parsed;
       try{ parsed = JSON.parse(raw); }
       catch(e){ toast("That isn't a valid backup."); return; }
-      if(!parsed || !Array.isArray(parsed.tasks) || !Array.isArray(parsed.habits)){
-        toast("That isn't a Momentum backup."); return;
-      }
-      state = Object.assign({ name:"", habits:[], tasks:[], goals:[], history:{}, oneThing:{},
-        lastActive:TODAY, briefSeen:{}, totalDone:0, bestStreak:0 }, parsed);
-      state.lastActive = TODAY;
-      save(); wrap.remove(); render();
-      toast("Restored.");
+      wrap.remove();
+      applyPack(parsed);
     };
   }
   function showText(text){
@@ -2170,7 +2231,7 @@
   function timerReset(){ clearInterval(timer.id); timer.running = false; timer.left = 25*60; paintClock(); }
 
   /* ---------------- boot ---------------- */
-  var BUILD = "v17";
+  var BUILD = "v18";
   var lastCheck = 0, taking = false;
   function liveBuild(){
     return fetch("sw.js?ts=" + Date.now(), { cache: "no-store" })
