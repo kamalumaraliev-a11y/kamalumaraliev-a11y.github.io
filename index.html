@@ -362,7 +362,7 @@
     .hero .dots i.on{background:#fff}
     .hero .cap{position:absolute; z-index:3; left:0; right:0; bottom:0; padding:28px 13px 10px; text-align:left; font-size:12px; color:#fff; background:linear-gradient(180deg, rgba(0,0,0,0), rgba(6,8,14,.85))}
     .nohero{display:block; width:100%; margin-bottom:16px; padding:26px 18px; border:1px dashed var(--line); border-radius:16px; background:transparent; color:var(--mute); font-family:var(--body); font-size:13px; line-height:1.5; text-align:center}
-    .ptitle{font-family:var(--display); font-weight:800; font-size:26px; line-height:1.15; margin:0 0 6px}
+    .ptitle{font-family:var(--display); font-weight:800; font-size:26px; line-height:1.15; margin:0 0 6px; cursor:pointer}
     .pwhy{font-size:13.5px; color:var(--mute); line-height:1.55; margin:0 0 16px}
     .strip{display:flex; gap:8px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px}
     .strip button{flex:0 0 auto; width:80px; height:80px; padding:0; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--slab-2); color:var(--mute); font-size:12px; font-family:var(--body)}
@@ -1155,6 +1155,30 @@
       if(wire) wire(wrap);
       return wrap;
     }
+    function openRename(goalId, after){
+      var g = state.goals.filter(function(x){ return x.id === goalId; })[0];
+      if(!g) return;
+      sheetOpen(
+        '<div class="mono">Edit this goal</div>' +
+        '<div class="fieldrow"><label class="fl"><span>The goal</span><input type="text" id="gnttl" maxlength="80" placeholder="Make 20K a month" value="' + esc(g.title || "") + '"></label></div>' +
+        '<div class="fieldrow"><label class="fl"><span>Why it matters</span><input type="text" id="gnwhy" maxlength="140" placeholder="Optional" value="' + esc(g.why || "") + '"></label></div>' +
+        '<p class="why" style="margin:12px 0 0">Fix a typo or word it better. Your pictures, numbers and history stay exactly as they are.</p>' +
+        '<div class="sheetbtns"><button class="ghost" data-close="1">Cancel</button><button class="solid" id="gnsave">Save</button></div>',
+        function(w){
+          var ti = w.querySelector("#gnttl");
+          w.querySelector("#gnsave").onclick = function(){
+            var v = ti.value.trim().slice(0, 80);
+            if(!v){ ti.focus(); return; }
+            g.title = v;
+            g.why = w.querySelector("#gnwhy").value.trim().slice(0, 140);
+            w.remove(); save(); render();
+            if(typeof after === "function") after();
+            toast("Goal updated.");
+          };
+          setTimeout(function(){ try{ ti.focus(); ti.select(); }catch(e){} }, 60);
+        }
+      );
+    }
     function openTarget(goalId){
       var g = state.goals.filter(function(x){ return x.id === goalId; })[0];
       if(!g) return;
@@ -1427,14 +1451,15 @@
             '</button>'
           : '<button class="nohero" data-addshot="' + g.id + '">Add a picture of what this looks like when you get there.<br>You will see it every time you open this goal.</button>';
 
-        h += '<h2 class="ptitle">' + esc(g.title) + '</h2>';
-        if(g.why) h += '<p class="pwhy">' + esc(g.why) + '</p>';
+        h += '<h2 class="ptitle" data-grename="1">' + esc(g.title) + '</h2>';
+        if(g.why) h += '<p class="pwhy" data-grename="1">' + esc(g.why) + '</p>';
 
         h += tgtBigHTML(g, pct);
         if(!(g.target > 0) && st.all.length) h += '<div class="bar"><i style="width:' + pct + '%"></i></div>';
         h += '<div class="gbtns">' +
             '<button class="gbtn hot" data-glog="' + g.id + '">' + (g.target > 0 ? "Log where I'm at" : "Put a number on it") + '</button>' +
             (g.target > 0 ? '<button class="gbtn" data-gtarget="' + g.id + '">Edit target</button>' : '') +
+            '<button class="gbtn" data-grename="1">Fix the wording</button>' +
             '<button class="gbtn" data-addshot="' + g.id + '">+ Picture</button>' +
         (ids.length ? '<button class="gbtn" data-gfill="1">' + (g.fill ? "Show all of it" : "Fill the frame") + '</button>' : '') +
           '</div>';
@@ -1507,6 +1532,7 @@
       w.addEventListener("click", function(ev){
         if(ev.target.closest("[data-gback]")){ close(); return; }
         if(ev.target.closest("[data-gmore]")){ showAll = true; paint(); return; }
+        if(ev.target.closest("[data-grename]")){ openRename(goalId, paint); return; }
         if(ev.target.closest("[data-gfill]")){ var gf = state.goals.filter(function(x){ return x.id === goalId; })[0]; if(gf){ gf.fill = !gf.fill; save(); paint(); } return; }
         var pic = ev.target.closest("[data-gpic]");
         if(pic){ openViewer(goalId, +pic.getAttribute("data-gpic")); return; }
@@ -2247,7 +2273,7 @@
   function timerReset(){ clearInterval(timer.id); timer.running = false; timer.left = 25*60; paintClock(); }
 
   /* ---------------- boot ---------------- */
-  var BUILD = "v21";
+  var BUILD = "v22";
   var lastCheck = 0, taking = false;
   function liveBuild(){
     return fetch("sw.js?ts=" + Date.now(), { cache: "no-store" })
