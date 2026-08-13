@@ -300,10 +300,11 @@
 
     /* ----------- vision board ----------- */
     .gshot{display:block; position:relative; width:calc(100% + 30px); margin:-15px -15px 13px; padding:0; border:0; background:var(--slab-2); overflow:hidden; border-radius:13px 13px 0 0; -webkit-tap-highlight-color:transparent}
-    .gshot img{display:block; width:100%; height:158px; object-fit:cover}
-    .gshot .veil{position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,0) 45%,rgba(6,8,14,.8))}
-    .gshot .cue{position:absolute; left:13px; right:52px; bottom:10px; text-align:left; font-size:11.5px; color:#fff; opacity:.9; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-    .gshot .dots{position:absolute; right:12px; bottom:12px; display:flex; gap:4px}
+    .gshot .pic{display:block; position:relative; z-index:1; width:100%; height:auto; max-height:240px; object-fit:contain}
+    .shotbg{position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover; filter:blur(26px) saturate(1.4) brightness(.55); transform:scale(1.35); z-index:0; pointer-events:none}
+    .gshot .veil{position:absolute; inset:0; z-index:2; background:linear-gradient(180deg,rgba(0,0,0,0) 62%,rgba(6,8,14,.82))}
+    .gshot .cue{position:absolute; z-index:3; left:13px; right:52px; bottom:10px; text-align:left; font-size:11.5px; color:#fff; opacity:.9; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+    .gshot .dots{position:absolute; z-index:3; right:12px; bottom:12px; display:flex; gap:4px}
     .gshot .dots i{width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.4)}
     .gshot .dots i.on{background:#fff}
     .tgt{display:flex; align-items:baseline; flex-wrap:wrap; gap:7px; margin:0 0 9px}
@@ -320,10 +321,10 @@
     .bhead{display:flex; align-items:center; gap:10px; margin-bottom:14px}
     .bhead h2{flex:1; font-family:var(--display); font-weight:800; font-size:22px; margin:0}
     .bgrid{display:grid; grid-template-columns:repeat(2,1fr); gap:9px}
-    .bcell{display:block; position:relative; width:100%; height:0; padding:0 0 132% 0; border:0; border-radius:13px; overflow:hidden; background:var(--slab-2)}
-    .bcell img{position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover}
-    .bcell .veil{position:absolute; left:0; top:0; right:0; bottom:0; background:linear-gradient(180deg,rgba(0,0,0,0) 38%,rgba(6,8,14,.85))}
-    .bcell u{position:absolute; left:10px; right:10px; bottom:9px; text-decoration:none; display:block; text-align:left; font-family:var(--display); font-weight:800; font-size:13px; color:#fff; line-height:1.25}
+    .bcell{display:block; position:relative; width:100%; height:0; padding:0 0 118% 0; border:0; border-radius:13px; overflow:hidden; background:var(--slab-2)}
+    .bcell .pic{position:absolute; left:0; top:0; width:100%; height:100%; object-fit:contain; z-index:1}
+    .bcell .veil{position:absolute; z-index:2; left:0; top:0; right:0; bottom:0; background:linear-gradient(180deg,rgba(0,0,0,0) 58%,rgba(6,8,14,.88))}
+    .bcell u{position:absolute; z-index:3; left:10px; right:10px; bottom:9px; text-decoration:none; display:block; text-align:left; font-family:var(--display); font-weight:800; font-size:13px; color:#fff; line-height:1.25}
     .bcell u i{display:block; font-style:normal; font-family:var(--body); font-weight:400; font-size:11px; color:var(--dawn); margin-top:3px}
     .viewer{position:fixed; inset:0; z-index:70; background:#05070c; display:flex; flex-direction:column; padding:calc(env(safe-area-inset-top) + 8px) 0 calc(env(safe-area-inset-bottom) + 14px)}
     .vstage{flex:1 1 auto; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; min-height:0}
@@ -338,7 +339,7 @@
     /* ----------- goal cards + goal page ----------- */
     .gcard{display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:11px; margin-bottom:9px; border:1px solid var(--line); border-radius:15px; background:var(--slab); color:var(--noon); font-family:var(--body)}
     .gcard .thumb{flex:0 0 auto; width:62px; height:62px; border-radius:12px; overflow:hidden; background:var(--slab-2); display:flex; align-items:center; justify-content:center}
-    .gcard .thumb img{width:100%; height:100%; object-fit:cover; display:block}
+    .gcard .thumb img{width:100%; height:100%; object-fit:contain; display:block}
     .gcard .thumb u{text-decoration:none; font-family:var(--display); font-weight:800; font-size:23px; color:var(--mute)}
     .gcard .gmid{flex:1 1 auto; min-width:0}
     .gcard .gmid > b{display:block; font-family:var(--display); font-weight:800; font-size:16px; line-height:1.25; margin-bottom:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -352,11 +353,11 @@
     .pwrap{padding:2px 16px 0}
     .pwrap .gbtns{margin-bottom:20px}
     .hero{position:relative; display:block; width:100%; padding:0; border:1px solid var(--line); background:#0A0D16; border-radius:16px; overflow:hidden; margin-bottom:16px; -webkit-tap-highlight-color:transparent}
-    .hero img{display:block; width:100%; max-height:46vh; object-fit:contain; margin:0 auto}
-    .hero .dots{position:absolute; right:11px; bottom:11px; display:flex; gap:4px}
+    .hero .pic{display:block; position:relative; z-index:1; width:100%; height:auto; max-height:56vh; object-fit:contain; margin:0 auto}
+    .hero .dots{position:absolute; z-index:3; right:11px; bottom:11px; display:flex; gap:4px}
     .hero .dots i{width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.42)}
     .hero .dots i.on{background:#fff}
-    .hero .cap{position:absolute; left:0; right:0; bottom:0; padding:28px 13px 10px; text-align:left; font-size:12px; color:#fff; background:linear-gradient(180deg, rgba(0,0,0,0), rgba(6,8,14,.85))}
+    .hero .cap{position:absolute; z-index:3; left:0; right:0; bottom:0; padding:28px 13px 10px; text-align:left; font-size:12px; color:#fff; background:linear-gradient(180deg, rgba(0,0,0,0), rgba(6,8,14,.85))}
     .nohero{display:block; width:100%; margin-bottom:16px; padding:26px 18px; border:1px dashed var(--line); border-radius:16px; background:transparent; color:var(--mute); font-family:var(--body); font-size:13px; line-height:1.5; text-align:center}
     .ptitle{font-family:var(--display); font-weight:800; font-size:26px; line-height:1.15; margin:0 0 6px}
     .pwhy{font-size:13.5px; color:var(--mute); line-height:1.55; margin:0 0 16px}
@@ -1048,7 +1049,8 @@
       var ids = goalShots(g);
       if(!ids.length) return "";
       return '<button class="gshot" data-vopen="' + g.id + '" aria-label="Open the pictures for ' + esc(g.title) + '">' +
-        '<img src="' + SHOTS[ids[0]].src + '" alt="" loading="lazy">' +
+        '<img class="shotbg" src="' + SHOTS[ids[0]].src + '" alt="" aria-hidden="true">' +
+        '<img class="pic" src="' + SHOTS[ids[0]].src + '" alt="" loading="lazy">' +
         '<span class="veil"></span>' +
         (SHOTS[ids[0]].cap ? '<span class="cue">' + esc(SHOTS[ids[0]].cap) + '</span>' : '') +
         (ids.length > 1
@@ -1218,7 +1220,8 @@
         (list.length
           ? '<div class="bgrid">' + list.map(function(s, i){
               return '<button class="bcell" data-vcell="' + i + '">' +
-                '<img src="' + SHOTS[s.id].src + '" alt="' + esc(s.g.title) + '">' +
+                '<img class="shotbg" src="' + SHOTS[s.id].src + '" alt="" aria-hidden="true">' +
+                '<img class="pic" src="' + SHOTS[s.id].src + '" alt="' + esc(s.g.title) + '">' +
                 '<span class="veil"></span>' +
                 '<u>' + esc(s.g.title) + '<i>' + goalNote(s.g) + '</i></u></button>';
             }).join("") + '</div>'
@@ -1414,7 +1417,8 @@
 
         h += ids.length
           ? '<button class="hero" data-vopen="' + g.id + '">' +
-              '<img src="' + SHOTS[ids[0]].src + '" alt="' + esc(g.title) + '">' +
+              '<img class="shotbg" src="' + SHOTS[ids[0]].src + '" alt="" aria-hidden="true">' +
+              '<img class="pic" src="' + SHOTS[ids[0]].src + '" alt="' + esc(g.title) + '">' +
               (SHOTS[ids[0]].cap ? '<span class="cap">' + esc(SHOTS[ids[0]].cap) + '</span>' : '') +
               (ids.length > 1 ? '<span class="dots">' + ids.map(function(x, k){ return '<i class="' + (k ? "" : "on") + '"></i>'; }).join("") + '</span>' : '') +
             '</button>'
@@ -2165,7 +2169,7 @@
   function timerReset(){ clearInterval(timer.id); timer.running = false; timer.left = 25*60; paintClock(); }
 
   /* ---------------- boot ---------------- */
-  var BUILD = "v15";
+  var BUILD = "v16";
   var lastCheck = 0, taking = false;
   function liveBuild(){
     return fetch("sw.js?ts=" + Date.now(), { cache: "no-store" })
