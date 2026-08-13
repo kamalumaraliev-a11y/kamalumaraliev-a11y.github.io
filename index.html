@@ -1155,6 +1155,33 @@
       if(wire) wire(wrap);
       return wrap;
     }
+    function addGoalTask(goalId, gd, root, after){
+      var el = root ? root.querySelector("#gnewtask") : null;
+      var v = el ? el.value.trim().slice(0, 140) : "";
+      if(!v){
+        if(el){ el.classList.add("nudgeme"); setTimeout(function(){ el.classList.remove("nudgeme"); }, 500); el.focus(); }
+        toast("Type the task first, then Add.");
+        return;
+      }
+      if(gd.when === "habit"){
+        state.habits.push({ id:uid(), title:v, log:{}, logAt:{}, days:[], createdDay:TODAY, goalId:goalId });
+        toast("Repeats every day, tied to this goal.");
+      } else {
+        var when = TODAY;
+        if(gd.when === "tomorrow") when = shiftKey(TODAY, 1);
+        if(gd.when === "pick"){
+          var pd = root ? root.querySelector("#gpickdate") : null;
+          when = pd && pd.value ? pd.value : shiftKey(TODAY, 1);
+        }
+        state.tasks.push({ id:uid(), title:v, date:when, time:"", goalId:goalId, star:false, done:false, createdDay:TODAY });
+        toast(when === TODAY ? "On today's board." : "Set for " + dayTitle(when) + ".");
+      }
+      gd.text = ""; gd.date = "";
+      save(); render();
+      if(typeof after === "function") after();
+      var again = root ? root.querySelector("#gnewtask") : null;
+      if(again) again.focus();
+    }
     function openRename(goalId, after){
       var g = state.goals.filter(function(x){ return x.id === goalId; })[0];
       if(!g) return;
@@ -1423,6 +1450,7 @@
       var w = document.createElement("div");
       w.className = "page";
       document.body.appendChild(w);
+      var gdraft = { when:"today", date:"", text:"" };
       var showAll = false, armed = false, armTimer = null;
 
       function close(){
@@ -1475,6 +1503,30 @@
         var sp = sparkHTML(g);
         if(sp) h += '<div class="sec">' + head("The climb", nfmt(g.cur || 0) + (g.unit ? " " + esc(g.unit) : "")) + sp + '</div>';
 
+        h += '<div class="sec">' + head("Plan the work", "") +
+          '<div class="composer">' +
+            '<div class="clabel">Add a task for this goal</div>' +
+            '<input type="text" id="gnewtask" placeholder="What needs doing for this?" maxlength="140" enterkeyhint="done" autocapitalize="sentences" value="' + esc(gdraft.text || "") + '">' +
+            '<div class="chipset">' +
+              '<button class="chip" data-gwhen="today" aria-pressed="' + (gdraft.when === "today") + '">Today</button>' +
+              '<button class="chip" data-gwhen="tomorrow" aria-pressed="' + (gdraft.when === "tomorrow") + '">Tomorrow</button>' +
+              '<button class="chip" data-gwhen="pick" aria-pressed="' + (gdraft.when === "pick") + '">Pick a date</button>' +
+              '<button class="chip" data-gwhen="habit" aria-pressed="' + (gdraft.when === "habit") + '">Every day</button>' +
+            '</div>' +
+            (gdraft.when === "pick" ? '<input type="date" id="gpickdate" value="' + (gdraft.date || shiftKey(TODAY, 1)) + '" min="' + TODAY + '">' : '') +
+            '<button class="add" data-gadd="1">' + (gdraft.when === "habit" ? "Add a daily habit" : "Add to this goal") + '</button>' +
+          '</div></div>';
+        if(st.open.length){
+          h += '<div class="sec">' + head("On the list", String(st.open.length)) +
+            st.open.slice().sort(function(a, b){ return (a.date || "9999-99-99") < (b.date || "9999-99-99") ? -1 : 1; }).map(function(t){
+              return '<div class="item">' +
+                '<button class="box" data-toggle="' + t.id + '" data-kind="task" aria-label="Mark done">' + CHECK + '</button>' +
+                '<div class="txt" data-toggle="' + t.id + '" data-kind="task">' + esc(t.title) +
+                (t.date ? '<span class="meta">' + dayTitle(t.date) + '</span>' : '') +
+                '</div></div>';
+            }).join("") + '</div>';
+        }
+
         var rows = st.done.map(function(t){ return { title: t.title, day: t.doneDay, at: t.doneAt || 0, rep: false }; });
         st.habits.forEach(function(x){
           Object.keys(x.log || {}).forEach(function(k){
@@ -1492,19 +1544,11 @@
                 return '<div class="logrow' + (r.rep ? " rep" : "") + '"><em>✓</em><s>' + esc(r.title) + '</s><u>' + (r.day ? dayTitle(r.day) : "") + '</u></div>';
               }).join("") + '</div>' +
               (rows.length > lim ? '<button class="morebtn" data-gmore="1">Show all ' + rows.length + '</button>' : '')
-            : '<div class="empty">Nothing on the board for this yet. Add a task on the Today tab and tag it with this goal — everything you finish lands here.</div>') +
+            : '<div class="empty">Nothing finished for this yet. Add a task above and it shows up on your Today screen on the day you picked — everything you clear lands here.</div>') +
         '</div>';
 
-        if(st.open.length){
-          h += '<div class="sec">' + head("Still open", String(st.open.length)) +
-            st.open.map(function(t){
-              return '<div class="item">' +
-                '<button class="box" data-toggle="' + t.id + '" data-kind="task" aria-label="Mark done">' + CHECK + '</button>' +
-                '<div class="txt" data-toggle="' + t.id + '" data-kind="task">' + esc(t.title) +
-                (t.day ? '<span class="meta">' + dayTitle(t.day) + '</span>' : '') +
-                '</div></div>';
-            }).join("") + '</div>';
-        }
+
+
 
         if(st.habits.length){
           h += '<div class="sec">' + head("On repeat", String(st.habits.length)) +
@@ -1533,6 +1577,16 @@
         if(ev.target.closest("[data-gback]")){ close(); return; }
         if(ev.target.closest("[data-gmore]")){ showAll = true; paint(); return; }
         if(ev.target.closest("[data-grename]")){ openRename(goalId, paint); return; }
+        var gw = ev.target.closest("[data-gwhen]");
+        if(gw){
+          var tf0 = w.querySelector("#gnewtask"); if(tf0) gdraft.text = tf0.value;
+          var pd0 = w.querySelector("#gpickdate"); if(pd0) gdraft.date = pd0.value;
+          gdraft.when = gw.getAttribute("data-gwhen");
+          paint();
+          var tf1 = w.querySelector("#gnewtask"); if(tf1) tf1.focus();
+          return;
+        }
+        if(ev.target.closest("[data-gadd]")){ addGoalTask(goalId, gdraft, w, paint); return; }
         if(ev.target.closest("[data-gfill]")){ var gf = state.goals.filter(function(x){ return x.id === goalId; })[0]; if(gf){ gf.fill = !gf.fill; save(); paint(); } return; }
         var pic = ev.target.closest("[data-gpic]");
         if(pic){ openViewer(goalId, +pic.getAttribute("data-gpic")); return; }
@@ -1765,7 +1819,7 @@
     var tf = document.getElementById("picktime");
     var time = tf ? tf.value : "";
     if(draft.when === "habit"){
-      state.habits.push({ id:uid(), title:v, log:{}, logAt:{}, days:draft.days.slice(), createdDay:TODAY });
+      state.habits.push({ id:uid(), title:v, log:{}, logAt:{}, days:draft.days.slice(), createdDay:TODAY, goalId: draft.goal || "" });
       toast(draft.days.length ? "Repeats " + draft.days.slice().sort().map(function(n){ return DAYNAMES[n]; }).join(" ") + "."
                               : "Repeats every day.");
     } else {
@@ -1902,6 +1956,7 @@
     if(e.target.id === "onein") document.getElementById("onebtn").click();
     if(e.target.id === "namein") document.getElementById("namebtn").click();
     if(e.target.id === "newgoal" || e.target.id === "newwhy") document.getElementById("goalbtn").click();
+      if(e.target.id === "gnewtask"){ var ga = document.querySelector("[data-gadd]"); if(ga) ga.click(); }
   });
 
   function copyDay(){
@@ -2273,7 +2328,7 @@
   function timerReset(){ clearInterval(timer.id); timer.running = false; timer.left = 25*60; paintClock(); }
 
   /* ---------------- boot ---------------- */
-  var BUILD = "v22";
+  var BUILD = "v23";
   var lastCheck = 0, taking = false;
   function liveBuild(){
     return fetch("sw.js?ts=" + Date.now(), { cache: "no-store" })
