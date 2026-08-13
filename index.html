@@ -1680,7 +1680,7 @@
       '<div class="empty" style="text-align:left">Momentum keeps everything in this browser on this device. Clearing your browser\'s website data would erase it. The text backup carries your goals, tasks, streaks and history. The file backup carries your pictures as well — use that one to move to another device.</div>' +
       '<button class="copyday" id="backup">Copy a backup (text)</button>' +
       '<button class="copyday" id="restore">Restore from text</button>' +
-      '<button class="copyday" id="backupfile">Save a full backup file (with pictures)</button>' +
+      '<button class="copyday" id="backupfile">Send / save a full backup (with pictures)</button>' +
       '<button class="copyday" id="restorefile">Load a backup file</button></div>';
     return h;
   }
@@ -1933,9 +1933,21 @@
     for(var i = 0; i < ids.length; i++){ if(SHOTS[ids[i]]) shots.push(SHOTS[ids[i]]); }
     return { app:"momentum", v:1, saved:new Date().toISOString(), state:state, shots:shots };
   }
+  function shareFile(blob){
+    try{
+      if(!navigator.share || !navigator.canShare || !window.File) return false;
+      var f = new File([blob], "momentum-backup-" + TODAY + ".json", { type:"application/json" });
+      if(!navigator.canShare({ files:[f] })) return false;
+      navigator.share({ files:[f], title:"Momentum backup", text:"My Momentum goals and pictures." }).then(function(){
+        toast("Sent. On the other device tap Load a backup file.");
+      }, function(){});
+      return true;
+    }catch(e){ return false; }
+  }
   function doBackupFile(){
     try{
       var blob = new Blob([JSON.stringify(fullPack())], { type:"application/json" });
+      if(shareFile(blob)) return;
       var url = URL.createObjectURL(blob);
       var a = document.createElement("a");
       a.href = url;
@@ -2235,7 +2247,7 @@
   function timerReset(){ clearInterval(timer.id); timer.running = false; timer.left = 25*60; paintClock(); }
 
   /* ---------------- boot ---------------- */
-  var BUILD = "v20";
+  var BUILD = "v21";
   var lastCheck = 0, taking = false;
   function liveBuild(){
     return fetch("sw.js?ts=" + Date.now(), { cache: "no-store" })
