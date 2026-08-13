@@ -33,7 +33,8 @@
     --body:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
-  html,body{margin:0; padding:0; width:100%; max-width:100%; overflow-x:hidden; background:var(--ink); font-family:var(--body); color:var(--noon); overscroll-behavior-y:contain; -webkit-text-size-adjust:100%; text-size-adjust:100%; touch-action:manipulation}
+  html{margin:0; padding:0; width:100%; max-width:100%; height:auto; overflow-x:hidden; background:var(--ink); -webkit-text-size-adjust:100%; text-size-adjust:100%}
+  body{margin:0; padding:0; width:100%; max-width:100%; height:auto; min-height:100%; overflow-x:clip; overflow-y:visible; background:var(--ink); font-family:var(--body); color:var(--noon); overscroll-behavior-y:contain; touch-action:manipulation}
   #app{
     font-family:var(--body);
     background:
@@ -2169,7 +2170,7 @@
   function timerReset(){ clearInterval(timer.id); timer.running = false; timer.left = 25*60; paintClock(); }
 
   /* ---------------- boot ---------------- */
-  var BUILD = "v16";
+  var BUILD = "v17";
   var lastCheck = 0, taking = false;
   function liveBuild(){
     return fetch("sw.js?ts=" + Date.now(), { cache: "no-store" })
@@ -2211,6 +2212,14 @@
     window.addEventListener("focus", function(){ pullUpdate(); });
   }
   bindVV();
+
+  document.addEventListener("keydown", function(ev){
+    if(ev.key !== "Escape" && ev.key !== "Esc") return;
+    var v = document.querySelector(".viewer #vx"); if(v){ v.click(); return; }
+    var s = document.querySelectorAll(".scrim"); if(s.length){ s[s.length - 1].remove(); return; }
+    var b = document.getElementById("bclose"); if(b){ b.click(); return; }
+    var p = document.querySelector("[data-gback]"); if(p){ p.click(); return; }
+  });
 
   (async function(){
     await load();
