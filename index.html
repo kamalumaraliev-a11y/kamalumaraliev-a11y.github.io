@@ -39,7 +39,7 @@
   body{margin:0; padding:0; width:100%; min-height:100%; overflow-x:clip; background:var(--ink);
     font-family:var(--body); color:var(--text); overscroll-behavior-y:contain; touch-action:manipulation}
   #app{min-height:100vh; min-height:100dvh; max-width:640px; margin:0 auto;
-    padding:18px 16px calc(96px + env(safe-area-inset-bottom))}
+    padding:calc(14px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom))}
   button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; font-size:inherit}
   input,select,textarea{font-family:inherit; font-size:16px; color:var(--text)}
   ::placeholder{color:#5E6780}
@@ -168,6 +168,44 @@
     font-family:var(--display); font-weight:700; font-size:16px}
   .vbtn span{display:block; font-family:var(--body); font-weight:400; font-size:12.5px; color:var(--dim); margin-top:3px}
 
+  /* ---------- goal posters (v25) ---------- */
+  .gposter{position:relative; display:block; width:100%; text-align:left; border-radius:20px; overflow:hidden;
+    background:var(--card); border:1px solid var(--line); height:clamp(240px, 44vh, 420px); margin-bottom:10px;
+    transition:transform .12s ease}
+  .gposter:active{transform:scale(.985)}
+  .gposter img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
+  .gposter .scrim{position:absolute; inset:0; background:linear-gradient(180deg, rgba(18,21,31,.05) 30%, rgba(18,21,31,.55) 62%, rgba(18,21,31,.95) 100%)}
+  .gposter .init{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:var(--display); font-weight:700; font-size:110px; color:var(--amber); opacity:.3}
+  .gposter .low{position:absolute; left:16px; right:16px; bottom:15px}
+  .gposter .low b{display:block; font-family:var(--display); font-weight:700; font-size:25px; line-height:1.15;
+    margin-bottom:4px; color:#fff; text-shadow:0 1px 10px rgba(0,0,0,.45)}
+  .gposter .low i{display:block; font-style:normal; font-size:13px; color:rgba(255,255,255,.88); margin-bottom:9px}
+  .gposter .low .bar{background:rgba(255,255,255,.25); height:6px}
+  .gposter .pctb{position:absolute; top:13px; right:13px; font-family:var(--display); font-weight:700; font-size:14.5px;
+    color:#fff; background:rgba(0,0,0,.45); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); padding:6px 12px; border-radius:99px}
+  .gpanel{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:12px; margin:-2px 0 14px;
+    animation:panelin .16s ease}
+  @keyframes panelin{from{opacity:0; transform:translateY(-6px)} to{opacity:1; transform:none}}
+  .gpanel .quiet{margin:2px 2px 8px}
+  .gpanel .gbtns{margin:6px 0 2px}
+
+  /* ---------- folds (v25) ---------- */
+  .fold{background:var(--card); border:1px solid var(--line); border-radius:16px; margin-bottom:10px; overflow:hidden}
+  .foldrow{display:flex; align-items:center; padding-right:10px}
+  .foldhead{display:flex; align-items:center; gap:10px; flex:1; min-width:0; text-align:left; padding:14px 15px}
+  .foldhead b{font-family:var(--display); font-weight:700; font-size:16.5px; flex:1; min-width:0}
+  .foldhead .cnt{font-size:13px; color:var(--dim); font-weight:500; white-space:nowrap}
+  .foldhead .cnt.hot{color:var(--amber)}
+  .foldhead .fchev{color:var(--dim); font-size:17px; line-height:1; transition:transform .18s ease}
+  .fold.open .fchev{transform:rotate(90deg)}
+  .foldbody{padding:0 11px 11px}
+  .foldbody .item{background:var(--card-2); border-color:rgba(255,255,255,.05); margin-bottom:6px}
+  .foldbody .item:last-child{margin-bottom:0}
+  .foldbody .empty{margin:0}
+  .foldbody .timer{margin-bottom:0}
+  .fold .headbtn{font-size:12.5px; color:var(--amber); padding:8px 6px; flex:0 0 auto; white-space:nowrap}
+
   /* ---------- stats / progress ---------- */
   .weekcard{background:linear-gradient(165deg,var(--card-2),var(--card)); border:1px solid var(--line);
     border-radius:16px; padding:15px 16px; margin-bottom:14px}
@@ -211,12 +249,12 @@
   .page{position:fixed; inset:0; z-index:40; background:var(--ink); overflow-y:auto; overscroll-behavior:contain}
   .pbar{position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:8px;
     background:rgba(18,21,31,.92); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-    padding:12px 14px; border-bottom:1px solid var(--line)}
-  .pbar .back{font-size:15px; color:var(--amber); font-weight:600}
+    padding:calc(10px + env(safe-area-inset-top)) 14px 10px; border-bottom:1px solid var(--line)}
+  .pbar .back{font-size:16.5px; color:var(--amber); font-weight:600; padding:10px 14px 10px 6px; margin:-8px 0}
   .pbar .sp{flex:1}
   .pwrap{max-width:640px; margin:0 auto; padding:16px 16px 60px}
   .hero{position:relative; display:block; width:100%; border-radius:18px; overflow:hidden; margin-bottom:14px;
-    background:var(--card); border:1px solid var(--line); height:210px}
+    background:var(--card); border:1px solid var(--line); height:clamp(280px, 52vh, 500px)}
   .hero .shotbg{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:blur(24px) brightness(.5); transform:scale(1.2)}
   .hero .pic{position:relative; width:100%; height:100%; object-fit:contain}
   .hero.fill .pic{object-fit:cover}
@@ -663,6 +701,18 @@
       (o.id ? '<button class="more" data-more="' + o.id + '" data-kind="' + o.kind + '" aria-label="More">⋯</button>' : '') +
     '</div>';
   }
+  var foldSt = { timer:false, rep:true, late:true, now:true, donef:false };
+  function fold(key, label, count, body, extra, hot){
+    var open = !!foldSt[key];
+    return '<div class="fold' + (open ? " open" : "") + '"><div class="foldrow">' +
+      '<button class="foldhead" data-fold="' + key + '">' +
+        '<b>' + label + '</b>' +
+        (count ? '<span class="cnt' + (hot ? " hot" : "") + '">' + count + '</span>' : '') +
+        '<span class="fchev">&rsaquo;</span>' +
+      '</button>' + (extra || "") + '</div>' +
+      (open ? '<div class="foldbody">' + body + '</div>' : '') +
+    '</div>';
+  }
   function head(label, count, btn){
     return '<div class="sechead"><b>' + label + '</b>' + (count ? '<span>' + count + '</span>' : '') +
       '<span class="spacer"></span>' + (btn || '') + '</div>';
@@ -792,47 +842,47 @@
         '<button class="undo-btn" data-toggle="' + un.id + '" data-kind="' + un.kind + '">Done</button></div>';
     }
 
-    h += '<div class="timer"><div class="clock" id="clock">25:00</div>' +
+    h += fold("timer", "Focus timer", "25 min",
+      '<div class="timer"><div class="clock" id="clock">25:00</div>' +
       '<div class="tlab" id="tlab">Focus block — one task, no tabs.</div>' +
-      '<button class="tbtn" id="tstart">Start</button><button class="tbtn" id="treset">Reset</button></div>';
+      '<button class="tbtn" id="tstart">Start</button><button class="tbtn" id="treset">Reset</button></div>');
 
     var habits = habitsDueToday();
     if(habits.length){
       var hd = habits.filter(function(x){ return x.log && x.log[TODAY]; }).length;
-      h += '<div class="sec">' + head("Repeating", hd + " of " + habits.length) +
+      h += fold("rep", "Repeating", hd + " of " + habits.length,
         habits.map(function(x){
           var run = habitRun(x), bits = [];
           if(habitDaysLabel(x)) bits.push(habitDaysLabel(x));
           if(run > 1) bits.push(run + " in a row");
           return itemHTML({ id:x.id, kind:"habit", title:x.title, done:!!(x.log && x.log[TODAY]), star:false, meta:bits.join(" · ") });
-        }).join("") + '</div>';
+        }).join(""), "", hd === habits.length);
     }
 
     var late = openTasks().filter(function(t){ return t.date < TODAY; });
     if(late.length){
-      h += '<div class="sec">' + head("Carried over", String(late.length),
-          '<button class="headbtn" id="pullall">Move all to today</button>') +
+      h += fold("late", "Carried over", String(late.length),
         late.sort(byStar).map(function(t){
           var n = daysBetween(t.date, TODAY);
           return itemHTML({ id:t.id, kind:"task", title:t.title, done:false, star:t.star,
             meta:metaFor(t, n===1 ? "1 day late" : n+" days late"), lateFlag:true });
-        }).join("") + '</div>';
+        }).join(""),
+        '<button class="headbtn" id="pullall">Move all to today</button>', true);
     }
 
     var now = state.tasks.filter(function(t){ return !t.done && t.date === TODAY; }).sort(byStar);
-    h += '<div class="sec">' + head("Today", now.length ? String(now.length) : "") +
+    h += fold("now", "Today", now.length ? now.length + " to go" : "",
       (now.length ? now.map(function(t){
         return itemHTML({ id:t.id, kind:"task", title:t.title, done:false, star:t.star, meta:metaFor(t, "") });
-      }).join("") : '<div class="empty">Nothing scheduled for today. Tap + to add the first thing — small counts.</div>') + '</div>';
+      }).join("") : '<div class="empty">Nothing scheduled for today. Tap + to add the first thing — small counts.</div>'));
 
     var dn = doneToday();
     if(dn.length){
-      h += '<div class="sec">' + head("Done today", String(dn.length),
-          '<button class="headbtn" id="toggledone">' + (showDone ? "Hide" : "Show") + '</button>') +
-        (showDone ? dn.map(function(t){
+      h += fold("donef", "Done today", String(dn.length),
+        dn.map(function(t){
           return itemHTML({ id:t.id, kind:"task", title:t.title, done:true, star:t.star,
             meta:new Date(t.doneAt).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"}) });
-        }).join("") : '') + '</div>';
+        }).join(""), "", true);
     }
 
     h += '<button class="wide warm" id="endday">Close out the day</button>';
@@ -1304,22 +1354,36 @@
       .sort(function(a,b){ return (a.date || "9999-99-99") < (b.date || "9999-99-99") ? -1 : 1; });
     return open.length ? open[0] : null;
   }
+  var expandedGoal = null;
   function gcardHTML(g){
-    var ids = goalShots(g), pct = goalPct(g), nx = nextStep(g);
-    return '<button class="gcard" data-gopen="' + g.id + '">' +
-      '<span class="thumb">' +
-        (ids.length
-          ? '<img src="' + SHOTS[ids[0]].src + '" alt="" loading="lazy">'
-          : '<u>' + esc((g.title || "?").trim().charAt(0).toUpperCase()) + '</u>') +
-      '</span>' +
-      '<span class="gmid">' +
+    var ids = goalShots(g), pct = goalPct(g), open = expandedGoal === g.id;
+    var h = '<button class="gposter" data-gopen="' + g.id + '" aria-expanded="' + open + '">' +
+      (ids.length
+        ? '<img src="' + SHOTS[ids[0]].src + '" alt="" loading="lazy">'
+        : '<span class="init">' + esc((g.title || "?").trim().charAt(0).toUpperCase()) + '</span>') +
+      '<span class="scrim"></span>' +
+      '<span class="pctb">' + pct + '%</span>' +
+      '<span class="low">' +
         '<b>' + esc(g.title) + '</b>' +
         '<i>' + goalNote(g) + dueLabel(g) + '</i>' +
-        (nx ? '<span class="next"><em>Next:</em> ' + esc(nx.title) + '</span>' : '') +
         '<span class="bar"><i style="width:' + pct + '%"></i></span>' +
       '</span>' +
-      '<span class="chev">›</span>' +
     '</button>';
+    if(open){
+      var opens = state.tasks.filter(function(t){ return t.goalId === g.id && !t.done; })
+        .sort(function(a,b){ return (a.date || "9999") < (b.date || "9999") ? -1 : 1; }).slice(0, 3);
+      h += '<div class="gpanel">' +
+        (opens.length
+          ? opens.map(function(t){ return itemHTML({ id:t.id, kind:"task", title:t.title, done:false, star:t.star, meta:metaFor(t, "") }); }).join("")
+          : '<p class="quiet">Nothing planned for this yet \u2014 open it and add the first step.</p>') +
+        '<div class="gbtns">' +
+          '<button class="gbtn hot" data-gpage="' + g.id + '">Open the goal &rsaquo;</button>' +
+          (g.target > 0 ? '<button class="gbtn" data-glog="' + g.id + '">Log where I&rsquo;m at</button>' : '') +
+          '<button class="gbtn" data-addshot="' + g.id + '">+ Picture</button>' +
+        '</div>' +
+      '</div>';
+    }
+    return h;
   }
   function goalStats(g){
     var all = goalTasks(g);
@@ -1874,7 +1938,7 @@
 
   /* ---------------- global click routing ---------------- */
   document.addEventListener("click", function(e){
-    var el = e.target.closest("[data-toggle],[data-more],[data-day],[data-daypick],[role='tab'],#fab,#addbtn,#onebtn,#namebtn,#endday,#copyday,#moredays,#gear,#rethink,#tstart,#treset,#asknudge,#testnudge,#visionbtn,#pullall,#toggledone,#qaddbtn,[data-vopen],[data-addshot],[data-glog],[data-gtarget],[data-gopen]");
+    var el = e.target.closest("[data-toggle],[data-more],[data-day],[data-daypick],[role='tab'],#fab,#addbtn,#onebtn,#namebtn,#endday,#copyday,#moredays,#gear,#rethink,#tstart,#treset,#asknudge,#testnudge,#visionbtn,#pullall,#toggledone,#qaddbtn,[data-vopen],[data-addshot],[data-glog],[data-gtarget],[data-gopen],[data-gpage],[data-fold]");
     if(!el) return;
     var d = el.dataset;
     if(el.getAttribute("role") === "tab" && d.tab){ tab = d.tab; if(tab === "days") dayPick = TODAY; render(); return; }
@@ -1900,7 +1964,9 @@
     if(d.addshot){ addShot(d.addshot); return; }
     if(d.glog){ openLog(d.glog); return; }
     if(d.gtarget){ openTarget(d.gtarget); return; }
-    if(d.gopen){ openGoal(d.gopen); return; }
+    if(d.gopen){ expandedGoal = (expandedGoal === d.gopen) ? null : d.gopen; render(); return; }
+    if(d.gpage){ openGoal(d.gpage); return; }
+    if(d.fold){ foldSt[d.fold] = !foldSt[d.fold]; render(); return; }
     if(el.id === "namebtn"){
       var nm = document.getElementById("namein");
       state.name = (nm ? nm.value.trim() : "").slice(0,24);
@@ -2327,7 +2393,7 @@
   function timerReset(){ clearInterval(timer.id); timer.running = false; timer.left = 25*60; paintClock(); }
 
   /* ---------------- boot + self-updates (mechanism unchanged) ---------------- */
-  var BUILD = "v24";
+  var BUILD = "v25";
   var lastCheck = 0, taking = false;
   function liveBuild(){
     return fetch("sw.js?ts=" + Date.now(), { cache: "no-store" })
