@@ -405,7 +405,7 @@
 "use strict";
 
 /* ================= storage & migration ================= */
-var KEY = "momentum:v1", BUILD = "v30";
+var KEY = "momentum:v1", BUILD = "v31";
 var state = {
   v:2, name:"", accent:"amber", mode:"night", onboarded:false,
   tasks:[], habits:[], goals:[], projects:[], areas:["Health","Work","Money","Learning","Home","People"],
@@ -1523,8 +1523,10 @@ function viewMore(){
     '<div class="mgrid">' + MORE.map(function(m){
       return '<button data-go="' + m[0] + '"><div class="mi">' + m[1] + '</div><b>' + m[2] + '</b><span class="quiet" style="display:block;font-size:10.5px;margin-top:2px">' + m[3] + '</span></button>'; }).join("") + '</div>' +
     '<div class="card"><div class="when">Right now</div><p>' + s.done + ' of ' + s.total + ' done today · ' + streakCount() + '-day streak · ' +
-    Object.keys(state.badges).length + ' of ' + BADGES.length + ' badges · ' + focusMinutes(TODAY) + ' focus minutes.</p></div>' +
-    '<div class="btns"><button class="btn wide" id="copyday">Copy my day as text</button></div>';
+    Object.keys(state.badges).length + ' of ' + BADGES.length + ' badges · ' + focusMinutes(TODAY) + ' focus minutes.</p>' +
+    '<p class="quiet" style="margin-top:8px">You are running build <b>' + BUILD + '</b>.</p></div>' +
+    '<div class="btns"><button class="btn wide" id="copyday">Copy my day as text</button>' +
+    '<button class="btn wide" id="checkupd">Check for a newer version</button></div>';
 }
 
 /* ================= CALENDAR ================= */
@@ -2111,9 +2113,11 @@ function openSettings(){
       '<button class="btn wide" id="restorefile">Load a backup file</button>' +
       '<div class="sh"><b>How this works</b></div>' +
       '<p class="quiet">Your day rolls over at ' + ((state.dayStart||4)===0?"midnight":(state.dayStart||4)+"am") + ', so a late night still counts as the same day. A day counts toward your streak when you clear at least one thing and finish 60% of the board.</p>' +
-      '<div class="sh"><b>Version</b></div><p class="quiet">Build <b>' + BUILD + '</b> · ' + state.tasks.length + ' tasks · ' + state.goals.length + ' goals · ' + state.habits.length + ' habits · ' + state.notes.length + ' notes.</p>' +
+      '<div class="sh"><b>Version</b><span class="sp"></span><button class="hb" id="supd">Check for update</button></div><p class="quiet">Build <b>' + BUILD + '</b> · ' + state.tasks.length + ' tasks · ' + state.goals.length + ' goals · ' + state.habits.length + ' habits · ' + state.notes.length + ' notes.</p>' +
       '<div class="sheetbtns"><button class="ghost" data-close="1">Close</button><button class="solid" id="ssave">Save</button></div>';
     w.querySelectorAll("[data-close]").forEach(function(x){ x.onclick = function(){ w.remove(); }; });
+    var upb = w.querySelector("#supd");
+    if(upb) upb.onclick = function(){ toast("Checking\u2026"); checkUpdate(true); };
     w.querySelector("#ssave").onclick = function(){
       state.name = w.querySelector("#sname").value.trim().slice(0,24);
       var a = w.querySelector("#sareas").value.split(",").map(function(s){ return s.trim(); }).filter(Boolean).slice(0,12);
@@ -2220,7 +2224,7 @@ document.addEventListener("click", function(e){
     "[data-gopen],[data-gpage],[data-gopenpage],[data-garea],[data-glog],[data-addshot],[data-vopen],[data-panelmile],[data-day],[data-dp],[data-cm]," +
     "[data-note],[data-proj],[data-ibt],[data-ibx],[data-inbox],[data-tplrun],[data-tpldel],[data-tplopen]," +
     "[role='tab'],#fab,#gear,#searchbtn,#qaddbtn,#qaddbtn2,#onebtn,#rethink,#namebtn,#endday,#copyday,#pullall,#tstart,#treset,#moredays," +
-    "#visionbtn,#tfilter,#clearf,#newnote,#newproj,#newtpl,#jsave,#rsave2,#ibadd,#noteq,#moredays");
+    "#visionbtn,#tfilter,#clearf,#newnote,#newproj,#newtpl,#jsave,#rsave2,#ibadd,#noteq,#moredays,#checkupd");
   if(!el) return;
   var d = el.dataset;
   if(el.getAttribute("role") === "tab" && d.tab){ go(d.tab); return; }
@@ -2291,6 +2295,7 @@ document.addEventListener("click", function(e){
   if(id === "namebtn"){ var ni = document.getElementById("namein"); state.name = (ni ? ni.value.trim() : "").slice(0,24); state.onboarded = true; save(); render(); return; }
   if(id === "endday"){ openRecap(); return; }
   if(id === "copyday"){ copyDay(); return; }
+  if(id === "checkupd"){ toast("Checking\u2026"); checkUpdate(true); return; }
   if(id === "pullall"){
     var late = lateTasks(), was = late.map(function(t){ return { t:t, d:t.date }; });
     late.forEach(function(t){ t.date = TODAY; }); save(); render();
@@ -2366,6 +2371,43 @@ window.addEventListener("error", function(){
     pageStack = []; goalRepaint = null; syncChrome(); render(); toast("Recovered — your data is safe."); }catch(e){}
 });
 
+/* ================= UPDATES ================= */
+function liveBuild(){
+  return fetch("sw.js?ts=" + Date.now(), { cache:"no-store" })
+    .then(function(r){ return r.text(); })
+    .then(function(t){ var m = t.match(/momentum-(v[0-9]+)/); return m ? m[1] : null; })
+    .catch(function(){ return null; });
+}
+function hardRefresh(){
+  var done = function(){ try{ location.reload(); }catch(e){} };
+  try{
+    if(window.caches && caches.keys){
+      caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); })
+        .then(done, done);
+      return;
+    }
+  }catch(e){}
+  done();
+}
+function checkUpdate(loud){
+  return liveBuild().then(function(v){
+    if(!v){ if(loud) toast("Couldn't reach the server."); return false; }
+    if(v === BUILD){ if(loud) toast("You're on the newest version (" + BUILD + ")."); return false; }
+    if(loud){
+      confirmSheet("Update available", "You're running " + BUILD + " and " + v + " is out. Updating reloads the app \u2014 your data stays exactly as it is.", "Update now", hardRefresh);
+    } else {
+      var seen = "";
+      try{ seen = sessionStorage.getItem("mom-upd") || ""; }catch(e){}
+      if(seen !== v){
+        try{ sessionStorage.setItem("mom-upd", v); }catch(e){}
+        toast("Version " + v + " available \u2014 updating\u2026");
+        setTimeout(hardRefresh, 1200);
+      }
+    }
+    return true;
+  });
+}
+
 /* ================= BOOT ================= */
 function rollover(){
   var t = todayKey();
@@ -2391,8 +2433,11 @@ function boot(){
   });
   try{ history.pushState({ p:1 }, ""); }catch(e){}
   setInterval(rollover, 60000);
-  document.addEventListener("visibilitychange", function(){ if(!document.hidden){ rollover(); render(); } });
-  if("serviceWorker" in navigator){ try{ navigator.serviceWorker.register("sw.js"); }catch(e){} }
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden){ rollover(); render(); checkUpdate(false); } });
+  if("serviceWorker" in navigator){
+    try{ navigator.serviceWorker.register("sw.js").then(function(reg){ try{ reg.update(); }catch(e){} }); }catch(e){}
+  }
+  setTimeout(function(){ checkUpdate(false); }, 1500);
 }
 boot();
 })();
