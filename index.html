@@ -28,6 +28,7 @@
     --dim:#8A93AD;          /* quiet text */
     --amber:#F0B26B;        /* the one warm accent */
     --amber-soft:rgba(240,178,107,.14);
+    --amber-line:rgba(240,178,107,.32);
     --mint:#5AC79E;         /* done / good */
     --blue:#8CA2E8;         /* future / scheduled */
     --red:#E88C8C;          /* late, used sparingly */
@@ -37,8 +38,8 @@
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   html{margin:0; padding:0; width:100%; overflow-x:hidden; background:var(--ink); -webkit-text-size-adjust:100%}
   body{margin:0; padding:0; width:100%; min-height:100%; overflow-x:clip; background:var(--ink);
-    font-family:var(--body); color:var(--text); overscroll-behavior-y:contain; touch-action:manipulation}
-  #app{min-height:100vh; min-height:100dvh; max-width:640px; margin:0 auto;
+    font-family:var(--body); color:var(--text); touch-action:manipulation}
+  #app{min-height:calc(100vh + 2px); min-height:calc(100dvh + 2px); max-width:640px; margin:0 auto;
     padding:calc(14px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom))}
   button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; font-size:inherit}
   input,select,textarea{font-family:inherit; font-size:16px; color:var(--text)}
@@ -52,7 +53,7 @@
   .wordmark span{color:var(--amber)}
   .topdate{font-size:13px; color:var(--dim); flex:1; padding-top:2px}
   .streak{font-size:12.5px; color:var(--amber); background:var(--amber-soft);
-    border:1px solid rgba(240,178,107,.3); padding:5px 10px; border-radius:99px; white-space:nowrap}
+    border:1px solid var(--amber-line); padding:5px 10px; border-radius:99px; white-space:nowrap}
   .streak.cold{color:var(--dim); background:none; border-color:var(--line)}
   .gearbtn{width:36px; height:36px; border-radius:10px; border:1px solid var(--line); background:var(--card);
     display:flex; align-items:center; justify-content:center; color:var(--soft); flex:0 0 auto}
@@ -80,7 +81,7 @@
     border-radius:10px; padding:10px 12px}
   .onething input:focus{outline:2px solid var(--amber); outline-offset:0}
   .focusline{display:flex; align-items:center; gap:8px; background:var(--amber-soft);
-    border:1px solid rgba(240,178,107,.28); border-radius:10px; padding:9px 12px; margin-top:10px; font-size:14px}
+    border:1px solid var(--amber-line); border-radius:10px; padding:9px 12px; margin-top:10px; font-size:14px}
   .focusline b{font-size:12px; color:var(--amber); font-weight:600; white-space:nowrap}
 
   /* ---------- up next ---------- */
@@ -112,7 +113,7 @@
   .item .txt{flex:1; min-width:0; font-size:15px; line-height:1.35; overflow-wrap:anywhere}
   .item .meta{display:block; font-size:12px; color:var(--dim); margin-top:2px}
   .item .meta.late{color:var(--red)}
-  .item.star{border-color:rgba(240,178,107,.4)}
+  .item.star{border-color:var(--amber-line)}
   .starmark{color:var(--amber); font-size:14px; flex:0 0 auto}
   .item .more{color:var(--dim); font-size:18px; padding:2px 6px; flex:0 0 auto}
   .item.offduty{opacity:.5}
@@ -123,7 +124,7 @@
 
   .wide{display:block; width:100%; text-align:center; background:var(--card); border:1px solid var(--line);
     border-radius:13px; padding:12px; font-size:14px; color:var(--soft); margin-bottom:8px}
-  .wide.warm{background:var(--amber-soft); border-color:rgba(240,178,107,.3); color:var(--amber); font-weight:600}
+  .wide.warm{background:var(--amber-soft); border-color:var(--amber-line); color:var(--amber); font-weight:600}
   .linky{color:var(--amber); font-size:inherit; padding:0; text-decoration:underline; text-underline-offset:2px}
 
   /* ---------- days strip ---------- */
@@ -137,7 +138,7 @@
   .dcell .dots{display:flex; gap:3px; justify-content:center; margin-top:5px; height:4px}
   .dcell .dots i{width:4px; height:4px; border-radius:50%; background:var(--dim)}
   .dcell .dots i.hot{background:var(--amber)}
-  .dcell[aria-selected="true"]{background:var(--amber-soft); border-color:rgba(240,178,107,.45)}
+  .dcell[aria-selected="true"]{background:var(--amber-soft); border-color:var(--amber-line)}
   .dcell[aria-selected="true"] .dn{color:var(--amber)}
   .daypane h2{font-size:18px; margin:6px 2px 2px}
   .daypane .quiet{margin:0 2px 12px}
@@ -170,9 +171,8 @@
 
   /* ---------- goal posters (v25) ---------- */
   .gposter{position:relative; display:block; width:100%; text-align:left; border-radius:20px; overflow:hidden;
-    background:var(--card); border:1px solid var(--line); height:clamp(240px, 44vh, 420px); margin-bottom:10px;
-    transition:transform .12s ease}
-  .gposter:active{transform:scale(.985)}
+    background:var(--card); border:1px solid var(--line); height:clamp(240px, 44vh, 420px); margin-bottom:10px}
+  .gposter:active{filter:brightness(1.07)}
   .gposter img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
   .gposter .scrim{position:absolute; inset:0; background:linear-gradient(180deg, rgba(18,21,31,.05) 30%, rgba(18,21,31,.55) 62%, rgba(18,21,31,.95) 100%)}
   .gposter .init{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
@@ -206,6 +206,17 @@
   .foldbody .timer{margin-bottom:0}
   .fold .headbtn{font-size:12.5px; color:var(--amber); padding:8px 6px; flex:0 0 auto; white-space:nowrap}
 
+  /* ---------- heatmap + confetti (v26) ---------- */
+  .heat{display:grid; grid-template-columns:repeat(14, 1fr); gap:4px; background:var(--card);
+    border:1px solid var(--line); border-radius:13px; padding:12px}
+  .hc{aspect-ratio:1; border-radius:4px; background:var(--card-2)}
+  .hc.p{background:var(--amber-soft)}
+  .hc.f{background:var(--amber)}
+  .hc.t{outline:2px solid var(--soft); outline-offset:-1px}
+  .party{position:fixed; inset:0; z-index:75; pointer-events:none; overflow:hidden}
+  .party i{position:absolute; top:-20px; width:9px; height:14px; border-radius:2px; animation:pfall linear forwards}
+  @keyframes pfall{0%{transform:translateY(-8vh) rotate(0); opacity:1} 85%{opacity:1} 100%{transform:translateY(112vh) rotate(560deg); opacity:0}}
+
   /* ---------- stats / progress ---------- */
   .weekcard{background:linear-gradient(165deg,var(--card-2),var(--card)); border:1px solid var(--line);
     border-radius:16px; padding:15px 16px; margin-bottom:14px}
@@ -213,7 +224,7 @@
   .weekline{font-family:var(--display); font-weight:700; font-size:19px; margin-bottom:9px}
   .weekdots{display:flex; gap:7px; margin-bottom:10px}
   .wd{width:12px; height:12px; border-radius:50%; background:var(--card-2); border:1px solid var(--line)}
-  .wd.part{background:var(--amber-soft); border-color:rgba(240,178,107,.4)}
+  .wd.part{background:var(--amber-soft); border-color:var(--amber-line)}
   .wd.hit{background:var(--amber); border-color:var(--amber)}
   .weeknote{margin:0; font-size:13.5px; color:var(--soft); line-height:1.5}
   .stats{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px}
@@ -246,7 +257,7 @@
   .done-thing{font-size:13.5px; color:var(--soft); margin:10px 0 2px}
 
   /* ---------- goal page ---------- */
-  .page{position:fixed; inset:0; z-index:40; background:var(--ink); overflow-y:auto; overscroll-behavior:contain}
+  .page{position:fixed; inset:0; z-index:40; background:var(--ink); overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch}
   .pbar{position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:8px;
     background:rgba(18,21,31,.92); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
     padding:calc(10px + env(safe-area-inset-top)) 14px 10px; border-bottom:1px solid var(--line)}
@@ -336,11 +347,11 @@
   .chipset{display:flex; flex-wrap:wrap; gap:7px; margin-top:12px}
   .chip{border:1px solid var(--line); background:var(--ink); color:var(--soft); border-radius:99px;
     padding:8px 13px; font-size:13.5px; transition:.15s}
-  .chip[aria-pressed="true"]{background:var(--amber-soft); border-color:rgba(240,178,107,.45); color:var(--amber); font-weight:600}
+  .chip[aria-pressed="true"]{background:var(--amber-soft); border-color:var(--amber-line); color:var(--amber); font-weight:600}
   .dayset{display:flex; flex-wrap:wrap; gap:6px}
   .dchip{border:1px solid var(--line); background:var(--ink); color:var(--soft); border-radius:9px;
     padding:7px 9px; font-size:12.5px}
-  .dchip[aria-pressed="true"]{background:var(--amber-soft); border-color:rgba(240,178,107,.45); color:var(--amber); font-weight:600}
+  .dchip[aria-pressed="true"]{background:var(--amber-soft); border-color:var(--amber-line); color:var(--amber); font-weight:600}
   .seg{display:flex; gap:4px; background:var(--ink); border:1px solid var(--line); border-radius:12px; padding:4px; margin-top:6px}
   .seg button{flex:1; padding:9px 4px; border-radius:9px; color:var(--dim); font-size:13.5px}
   .seg button[aria-pressed="true"]{background:var(--card-2); color:var(--text); font-weight:600}
@@ -435,6 +446,9 @@
     </div>
     <div style="flex:1"></div>
     <div class="streak cold" id="streak">no streak yet</div>
+    <button class="gearbtn" id="searchbtn" aria-label="Search">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    </button>
     <button class="gearbtn" id="gear" aria-label="Settings">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.09a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.09a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg>
     </button>
@@ -487,6 +501,18 @@
   function uid(){ return Math.random().toString(36).slice(2,9); }
 
   var TODAY = todayKey();
+
+  /* ---------------- accent themes (v26) ---------------- */
+  var THEMES = {
+    amber:["#F0B26B","rgba(240,178,107,.14)","rgba(240,178,107,.32)"],
+    mint:["#63CFA4","rgba(99,207,164,.14)","rgba(99,207,164,.32)"],
+    sky:["#8BB8F0","rgba(139,184,240,.14)","rgba(139,184,240,.32)"],
+    rose:["#EF93AE","rgba(239,147,174,.16)","rgba(239,147,174,.34)"]
+  };
+  function applyTheme(){
+    var t = THEMES[state.accent] || THEMES.amber, r = document.documentElement.style;
+    r.setProperty("--amber", t[0]); r.setProperty("--amber-soft", t[1]); r.setProperty("--amber-line", t[2]);
+  }
   var saveTimer = null;
 
   function localGet(){ try{ return window.localStorage.getItem(KEY); }catch(e){ return null; } }
@@ -842,10 +868,15 @@
         '<button class="undo-btn" data-toggle="' + un.id + '" data-kind="' + un.kind + '">Done</button></div>';
     }
 
-    h += fold("timer", "Focus timer", "25 min",
-      '<div class="timer"><div class="clock" id="clock">25:00</div>' +
+    var pom = (state.pomos || {})[TODAY] || 0;
+    h += fold("timer", "Focus timer",
+      pom ? pom + (pom === 1 ? " session today" : " sessions today") : Math.round(timer.len/60) + " min",
+      '<div class="chipset" style="margin-bottom:8px">' +
+        [15,25,45].map(function(mn){ return '<button class="chip" data-tlen="' + mn + '" aria-pressed="' + (timer.len === mn*60) + '">' + mn + ' min</button>'; }).join("") +
+      '</div>' +
+      '<div class="timer"><div class="clock" id="clock">' + Math.floor(timer.left/60) + ':' + String(timer.left % 60).padStart(2, "0") + '</div>' +
       '<div class="tlab" id="tlab">Focus block — one task, no tabs.</div>' +
-      '<button class="tbtn" id="tstart">Start</button><button class="tbtn" id="treset">Reset</button></div>');
+      '<button class="tbtn" id="tstart">Start</button><button class="tbtn" id="treset">Reset</button></div>', "", pom > 0);
 
     var habits = habitsDueToday();
     if(habits.length){
@@ -1089,6 +1120,11 @@
         return Math.max(0, Math.min(100, Math.round((b - cur) / (b - g.target) * 100)));
       }
       return Math.max(0, Math.min(100, Math.round(cur / g.target * 100)));
+    }
+    var mi = g.miles || [];
+    if(mi.length){
+      var mdone = mi.filter(function(m){ return m.done; }).length;
+      return Math.round(mdone / mi.length * 100);
     }
     var all = state.tasks.filter(function(t){ return t.goalId === g.id; });
     var done = all.filter(function(t){ return t.done; }).length;
@@ -1428,7 +1464,7 @@
     var ty = g.target > 0 ? Math.round((H - pad - (g.target / top) * (H - pad * 2)) * 10) / 10 : null;
     return '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
         '<defs><linearGradient id="sgrad" x1="0" y1="0" x2="0" y2="1">' +
-          '<stop offset="0" stop-color="rgba(240,178,107,.3)"/>' +
+          '<stop offset="0" stop-color="var(--amber-line)"/>' +
           '<stop offset="1" stop-color="rgba(240,178,107,0)"/>' +
         '</linearGradient></defs>' +
         (ty !== null ? '<line class="tl" x1="0" y1="' + ty + '" x2="' + W + '" y2="' + ty + '" vector-effect="non-scaling-stroke"></line>' : '') +
@@ -1517,6 +1553,24 @@
           statBox("Cleared", st.done.length, "tasks done for this") +
           statBox("Last 7 days", st.last7, "things knocked out") +
         '</div></div>';
+
+      var mi = g.miles || [], mdn = mi.filter(function(m){ return m.done; }).length;
+      h += '<div class="sec">' + head("Milestones", mi.length ? mdn + " of " + mi.length : "the big checkpoints") +
+        mi.map(function(m){
+          return '<div class="item' + (m.done ? " done" : "") + '">' +
+            '<button class="box" data-mileflip="' + m.id + '" aria-label="Mark milestone">' + CHECK + '</button>' +
+            '<div class="txt" data-mileflip="' + m.id + '" style="cursor:pointer">' + esc(m.t) + '</div>' +
+            '<button class="more" data-miledel="' + m.id + '" aria-label="Remove">&times;</button>' +
+          '</div>';
+        }).join("") +
+        '<div class="quickadd" style="margin-bottom:0' + (mi.length ? "; margin-top:8px" : "") + '"><input type="text" id="gnewmile" placeholder="Name the next checkpoint" maxlength="80" enterkeyhint="done" autocapitalize="sentences"><button data-mileadd="1">Add</button></div>' +
+      '</div>';
+
+      var nts = (g.notes || []).slice(-3).reverse();
+      h += '<div class="sec">' + head("Notes to self", (g.notes || []).length ? String((g.notes || []).length) : "") +
+        '<div class="quickadd" style="margin-bottom:0"><input type="text" id="gnewnote" placeholder="How is it going? One honest line." maxlength="180" enterkeyhint="done" autocapitalize="sentences"><button data-noteadd="1">Keep</button></div>' +
+        nts.map(function(n){ return '<p class="dnote" style="margin:9px 2px 0">' + esc(n.t) + ' <span class="dtime">&middot; ' + dayTitle(n.d) + '</span></p>'; }).join("") +
+      '</div>';
 
       var sp = sparkHTML(g);
       if(sp) h += '<div class="sec">' + head("The climb", nfmt(g.cur || 0) + (g.unit ? " " + esc(g.unit) : "")) + sp + '</div>';
@@ -1617,6 +1671,33 @@
         (state.habits || []).forEach(function(x){ if(x.goalId === goalId) x.goalId = ""; });
         close(); save(); render();
         return;
+      }
+    });
+    w.addEventListener("click", function(ev){
+      var b = ev.target.closest("[data-mileflip],[data-miledel],[data-mileadd],[data-noteadd]");
+      if(!b) return;
+      var g = state.goals.filter(function(x){ return x.id === goalId; })[0];
+      if(!g) return;
+      var ds = b.dataset;
+      if(ds.mileflip){
+        (g.miles || []).forEach(function(m){ if(m.id === ds.mileflip) m.done = !m.done; });
+        save(); paint(); render(); return;
+      }
+      if(ds.miledel){
+        g.miles = (g.miles || []).filter(function(m){ return m.id !== ds.miledel; });
+        save(); paint(); render(); return;
+      }
+      if(ds.mileadd){
+        var mIn = w.querySelector("#gnewmile"), mv = mIn ? mIn.value.trim().slice(0, 80) : "";
+        if(!mv){ if(mIn) mIn.focus(); return; }
+        g.miles = g.miles || []; g.miles.push({ id: uid(), t: mv, done: false });
+        save(); paint(); render(); toast("Milestone set."); return;
+      }
+      if(ds.noteadd){
+        var nIn = w.querySelector("#gnewnote"), nv = nIn ? nIn.value.trim().slice(0, 180) : "";
+        if(!nv){ if(nIn) nIn.focus(); return; }
+        g.notes = g.notes || []; g.notes.push({ d: TODAY, t: nv });
+        save(); paint(); toast("Kept."); return;
       }
     });
     goalRepaint = paint;
@@ -1756,6 +1837,17 @@
           '<i style="height:' + Math.max(3, hgt) + '%"></i><span>' + lbl + '</span></div>';
       }).join("") + '</div></div>';
 
+    var hk = shiftKey(TODAY, -69), cells = "";
+    for(var hi = 0; hi < 70; hi++){
+      var hs = hk === TODAY ? todayStats() : (state.history[hk] || null);
+      var cls = "hc";
+      if(hs && qualifies(hs)) cls += " f"; else if(hs && hs.done) cls += " p";
+      if(hk === TODAY) cls += " t";
+      cells += '<span class="' + cls + '" title="' + hk + '"></span>';
+      hk = shiftKey(hk, 1);
+    }
+    h += '<div class="sec">' + head("The map", "last 10 weeks") + '<div class="heat">' + cells + '</div></div>';
+
     h += historyHTML();
     h += '<p class="quiet" style="text-align:center; margin:4px 0 0">Backups moved to Settings — the gear up top.</p>';
     return h;
@@ -1771,6 +1863,7 @@
       new Date().toLocaleDateString(undefined, {weekday:"long", month:"long", day:"numeric"});
   }
   function render(){
+    applyTheme();
     drawTop();
     document.getElementById("view").innerHTML =
       tab === "today" ? viewToday() :
@@ -1938,7 +2031,7 @@
 
   /* ---------------- global click routing ---------------- */
   document.addEventListener("click", function(e){
-    var el = e.target.closest("[data-toggle],[data-more],[data-day],[data-daypick],[role='tab'],#fab,#addbtn,#onebtn,#namebtn,#endday,#copyday,#moredays,#gear,#rethink,#tstart,#treset,#asknudge,#testnudge,#visionbtn,#pullall,#toggledone,#qaddbtn,[data-vopen],[data-addshot],[data-glog],[data-gtarget],[data-gopen],[data-gpage],[data-fold]");
+    var el = e.target.closest("[data-toggle],[data-more],[data-day],[data-daypick],[role='tab'],#fab,#addbtn,#onebtn,#namebtn,#endday,#copyday,#moredays,#gear,#rethink,#tstart,#treset,#asknudge,#testnudge,#visionbtn,#pullall,#toggledone,#qaddbtn,[data-vopen],[data-addshot],[data-glog],[data-gtarget],[data-gopen],[data-gpage],[data-fold],[data-tlen],#searchbtn");
     if(!el) return;
     var d = el.dataset;
     if(el.getAttribute("role") === "tab" && d.tab){ tab = d.tab; if(tab === "days") dayPick = TODAY; render(); return; }
@@ -1984,6 +2077,8 @@
     if(d.day){ openDay = (openDay === d.day) ? null : d.day; render(); return; }
     if(el.id === "moredays"){ histLimit += 30; render(); return; }
     if(el.id === "gear"){ openSettings(); return; }
+    if(el.id === "searchbtn"){ openSearch(); return; }
+    if(d.tlen){ if(!timer.running){ timer.len = (+d.tlen) * 60; timer.left = timer.len; } render(); return; }
     if(el.id === "rethink"){ delete state.oneThing[TODAY]; save(); render(); return; }
     if(el.id === "tstart"){ timerToggle(); return; }
     if(el.id === "treset"){ timerReset(); return; }
@@ -2270,6 +2365,48 @@
   }
 
   /* ---------------- settings ---------------- */
+  function openSearch(){
+    sheetOpen(
+      '<div class="when">Search</div>' +
+      '<input type="text" class="bigin" id="sq" placeholder="Find a task, goal or repeat\u2026" autocomplete="off">' +
+      '<div id="sres" style="margin-top:10px"></div>' +
+      '<div class="sheetbtns"><button class="ghost" data-close="1">Close</button></div>',
+      function(w){
+        var q = w.querySelector("#sq"), out = w.querySelector("#sres");
+        function row(icon, title, meta, attr){
+          return '<button class="item" style="width:100%; text-align:left" ' + attr + '>' +
+            '<span style="flex:0 0 auto; color:var(--amber)">' + icon + '</span>' +
+            '<span class="txt">' + title + (meta ? '<span class="meta">' + meta + '</span>' : '') + '</span>' +
+          '</button>';
+        }
+        function go(){
+          var v = q.value.trim().toLowerCase(), hits = [];
+          if(v.length < 2){ out.innerHTML = '<p class="quiet" style="margin:0">Type a couple of letters and everything you have ever planned shows up.</p>'; return; }
+          state.goals.forEach(function(g){
+            if((g.title || "").toLowerCase().indexOf(v) > -1)
+              hits.push(row("\u25CE", esc(g.title), "goal \u00b7 " + goalPct(g) + "%", 'data-sgoal="' + g.id + '"'));
+          });
+          state.tasks.filter(function(t){ return !t.done; }).forEach(function(t){
+            if((t.title || "").toLowerCase().indexOf(v) > -1)
+              hits.push(row("\u2713", esc(t.title), t.date ? dayTitle(t.date) : "", 'data-sday="' + (t.date || TODAY) + '"'));
+          });
+          state.habits.forEach(function(x){
+            if((x.title || "").toLowerCase().indexOf(v) > -1)
+              hits.push(row("\u21BB", esc(x.title), "repeats", 'data-sday="' + TODAY + '"'));
+          });
+          out.innerHTML = hits.length ? hits.slice(0, 12).join("") : '<p class="quiet" style="margin:0">Nothing matches that.</p>';
+        }
+        q.oninput = go; go();
+        setTimeout(function(){ try{ q.focus(); }catch(e){} }, 60);
+        w.addEventListener("click", function(ev){
+          var b = ev.target.closest("[data-sgoal],[data-sday]");
+          if(!b) return;
+          w.remove();
+          if(b.dataset.sgoal){ tab = "goals"; render(); openGoal(b.dataset.sgoal); }
+          else { tab = "days"; dayPick = b.dataset.sday; render(); }
+        });
+      });
+  }
   function openSettings(){
     var w = sheetOpen("", function(){});
     function paint(){
@@ -2282,6 +2419,10 @@
         '<div class="when">Settings</div>' +
         '<label class="fl" style="margin-top:10px"><span>What should Momentum call you?</span>' +
         '<input type="text" id="sname" class="bigin" style="margin-top:2px" maxlength="24"></label>' +
+        '<div class="sechead" style="margin-top:16px"><b>Accent color</b></div>' +
+        '<div class="chipset">' + ["amber","mint","sky","rose"].map(function(a){
+          return '<button class="chip" data-acc="' + a + '" aria-pressed="' + ((state.accent || "amber") === a) + '">' + a + '</button>';
+        }).join("") + '</div>' +
         '<div class="sechead" style="margin-top:18px"><b>Reminders</b></div>' + nudgeBarHTML() +
         '<div class="sechead"><b>Your repeating tasks</b><span>' + (state.habits.length || "none yet") + '</span></div>' +
         (reps || '<div class="empty">Nothing on repeat yet. Tap + and pick Repeats.</div>') +
@@ -2300,6 +2441,12 @@
         '<button class="solid" id="ssave">Save</button></div>';
       var ni = w.querySelector("#sname");
       ni.value = state.name || "";
+      w.querySelectorAll("[data-acc]").forEach(function(b){
+        b.onclick = function(){
+          state.accent = b.dataset.acc; save(); applyTheme();
+          w.querySelectorAll("[data-acc]").forEach(function(c){ c.setAttribute("aria-pressed", String(c === b)); });
+        };
+      });
       var x = w.querySelector("[data-close]");
       if(x) x.onclick = function(){ w.remove(); };
       var ub = w.querySelector("#supd");
@@ -2335,6 +2482,7 @@
     var left = openTasks();
     var tier = s.total === 0 ? "zero" : s.rate >= 0.75 ? "strong" : s.rate >= 0.4 ? "mid" : "slow";
     sheetOpen(
+      (s.total > 0 && s.done >= s.total ? partyHTML() : '') +
       '<div class="when">Day closed · ' + new Date().toLocaleDateString(undefined,{weekday:"long", month:"short", day:"numeric"}) + '</div>' +
       '<h2>' + (s.done ? "You cleared " + s.done + "." : "Nothing cleared today.") + '</h2>' +
       '<div class="tally">' +
@@ -2362,15 +2510,24 @@
       });
   }
 
+  function partyHTML(){
+    var cols = ["#F0B26B","#5AC79E","#8CA2E8","#EAEDF6","#EF93AE"], out = "";
+    for(var i = 0; i < 22; i++){
+      out += '<i style="left:' + (3 + Math.random()*94).toFixed(1) + '%; background:' + cols[i % cols.length] +
+        '; animation-delay:' + (Math.random()*0.7).toFixed(2) + 's; animation-duration:' + (1.6 + Math.random()*1.4).toFixed(2) + 's"></i>';
+    }
+    return '<div class="party" aria-hidden="true">' + out + '</div>';
+  }
+
   /* ---------------- focus timer ---------------- */
-  var timer = { running:false, left:25*60, id:null };
+  var timer = { running:false, left:25*60, len:25*60, id:null };
   function paintClock(){
     var c = document.getElementById("clock");
     if(!c) return;
     var m = Math.floor(timer.left/60), s = timer.left % 60;
     c.textContent = m + ":" + String(s).padStart(2,"0");
     var b = document.getElementById("tstart");
-    if(b) b.textContent = timer.running ? "Pause" : (timer.left === 25*60 ? "Start" : "Resume");
+    if(b) b.textContent = timer.running ? "Pause" : (timer.left === timer.len ? "Start" : "Resume");
     var l = document.getElementById("tlab");
     if(l) l.textContent = timer.running ? "Running — one task, no tabs." : "Focus block — one task, no tabs.";
   }
@@ -2381,8 +2538,9 @@
       timer.id = setInterval(function(){
         timer.left--;
         if(timer.left <= 0){
-          clearInterval(timer.id); timer.running = false; timer.left = 25*60;
-          toast("Block done. Stand up, then go again.");
+          clearInterval(timer.id); timer.running = false; timer.left = timer.len;
+          state.pomos = state.pomos || {}; state.pomos[TODAY] = (state.pomos[TODAY] || 0) + 1; save();
+          toast("Block " + state.pomos[TODAY] + " done. Stand up, then go again.");
           fire("Focus block done", "25 minutes in the bank. Stretch, then line up the next one.", "focus");
         }
         paintClock();
@@ -2390,10 +2548,22 @@
     }
     paintClock();
   }
-  function timerReset(){ clearInterval(timer.id); timer.running = false; timer.left = 25*60; paintClock(); }
+  function timerReset(){ clearInterval(timer.id); timer.running = false; timer.left = timer.len; paintClock(); }
+
+  var recovering = false;
+  window.addEventListener("error", function(){
+    if(recovering) return;
+    recovering = true;
+    setTimeout(function(){ recovering = false; }, 4000);
+    try{
+      document.querySelectorAll(".page,.viewer,.board,.scrim").forEach(function(n){ n.remove(); });
+      render();
+      toast("Recovered from a glitch \u2014 your data is safe.");
+    }catch(e){}
+  });
 
   /* ---------------- boot + self-updates (mechanism unchanged) ---------------- */
-  var BUILD = "v25";
+  var BUILD = "v26";
   var lastCheck = 0, taking = false;
   function liveBuild(){
     return fetch("sw.js?ts=" + Date.now(), { cache: "no-store" })
