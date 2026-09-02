@@ -405,7 +405,7 @@
 "use strict";
 
 /* ================= storage & migration ================= */
-var KEY = "momentum:v1", BUILD = "v29";
+var KEY = "momentum:v1", BUILD = "v30";
 var state = {
   v:2, name:"", accent:"amber", mode:"night", onboarded:false,
   tasks:[], habits:[], goals:[], projects:[], areas:["Health","Work","Money","Learning","Home","People"],
@@ -1172,7 +1172,7 @@ function gcardHTML(g){
   return h;
 }
 function openGoal(goalId){
-  var w = pageOpen(), gdraft = { when:"today", text:"" }, showAll = false, tabG = "plan";
+  var w = pageOpen(), gdraft = { when:"today", text:"", date:"", time:"" }, showAll = false, tabG = "plan";
   function paint(){ safePaint(w, paintInner, "Goals"); }
   function paintInner(){
     var g = byId(state.goals, goalId); if(!g){ pageClose(w); return; }
@@ -1206,9 +1206,16 @@ function openGoal(goalId){
         '<div class="qa" style="margin-top:8px"><input class="in" id="gnewmile" placeholder="Name the next checkpoint" maxlength="90" enterkeyhint="done"><button class="btn" data-mileadd="1">Add</button></div></div>';
       h += '<div class="sec">' + head("Tasks for this", st.open.length + " open") +
         '<div class="qa"><input class="in" id="gnewtask" placeholder="What needs doing?" maxlength="160" enterkeyhint="done" value="' + esc(gdraft.text||"") + '"><button class="btn" data-gadd="1">Add</button></div>' +
-        '<div class="chips">' + [["today","Today"],["tomorrow","Tomorrow"],["none","No date"],["habit","Every day"]].map(function(c){
+        '<div class="chips">' + [["today","Today"],["tomorrow","Tomorrow"],["pick","Pick date & time"],["none","No date"],["habit","Every day"]].map(function(c){
           return '<button class="chip sm" data-gwhen="' + c[0] + '" aria-pressed="' + (gdraft.when===c[0]) + '">' + c[1] + '</button>'; }).join("") + '</div>' +
-        (st.open.length ? st.open.slice().sort(by(function(t){ return t.date||"9999"; })).map(function(t){ return itemHTML({ t:t }); }).join("")
+        (gdraft.when === "pick"
+          ? '<div class="grid2" style="margin-bottom:10px"><label class="fl"><span>Date</span><input class="in" type="date" id="gpickdate" value="' + (gdraft.date || shiftKey(TODAY,1)) + '"></label>' +
+            '<label class="fl"><span>Time (optional)</span><input class="in" type="time" id="gpicktime" value="' + esc(gdraft.time||"") + '"></label></div>'
+          : '') +
+        (st.open.length ? st.open.slice().sort(by(function(t){ return (t.date||"9999") + (t.time||""); })).map(function(t){
+            return itemHTML({ t:t, meta: (t.date ? dayTitle(t.date) : "no date") + (t.time ? " · " + t.time : "") +
+              (t.date && t.date < TODAY ? ' · <span class="late">overdue</span>' : "") });
+          }).join("")
           : '<div class="empty">No open tasks for this goal.</div>') + '</div>';
       if(st.habits.length) h += '<div class="sec">' + head("Habits feeding this", String(st.habits.length)) + st.habits.map(habitItemHTML).join("") + '</div>';
     } else if(tabG === "track"){
@@ -1280,13 +1287,29 @@ function openGoal(goalId){
       if(!mv){ if(mi2) mi2.focus(); return; } g.miles = g.miles||[]; g.miles.push({ id:uid(), t:mv, done:false, d:"" }); save(); paint(); render(); toast("Milestone set."); return; }
     if(d.noteadd != null){ var ni = w.querySelector("#gnewnote"), nv = ni ? ni.value.trim().slice(0,200) : "";
       if(!nv){ if(ni) ni.focus(); return; } g.notes = g.notes||[]; g.notes.push({ d:TODAY, t:nv }); checkBadges(); save(); paint(); toast("Kept."); return; }
-    if(d.gwhen){ gdraft.when = d.gwhen; var gi = w.querySelector("#gnewtask"); if(gi) gdraft.text = gi.value; paint(); return; }
+    if(d.gwhen){
+      var gi0 = w.querySelector("#gnewtask"); if(gi0) gdraft.text = gi0.value;
+      var gd0 = w.querySelector("#gpickdate"); if(gd0) gdraft.date = gd0.value;
+      var gt0 = w.querySelector("#gpicktime"); if(gt0) gdraft.time = gt0.value;
+      gdraft.when = d.gwhen; paint(); return;
+    }
     if(d.gadd != null){
       var gi2 = w.querySelector("#gnewtask"), gv = gi2 ? gi2.value.trim().slice(0,160) : "";
       if(!gv){ if(gi2) gi2.focus(); return; }
-      if(gdraft.when === "habit") state.habits.push({ id:uid(), title:gv, icon:"✦", days:null, log:{}, logAt:{}, goalId:goalId, createdDay:TODAY });
-      else state.tasks.push({ id:uid(), title:gv, date: gdraft.when==="today"?TODAY:gdraft.when==="tomorrow"?shiftKey(TODAY,1):"", time:"", goalId:goalId, projectId:"", tags:[], subs:[], pri:0, star:false, notes:"", done:false, createdDay:TODAY });
-      gdraft.text = ""; save(); paint(); render(); toast("Added.");
+      if(gdraft.when === "habit"){
+        state.habits.push({ id:uid(), title:gv, icon:"✦", days:null, log:{}, logAt:{}, goalId:goalId, createdDay:TODAY });
+        gdraft.text = ""; save(); paint(); render(); toast("Repeats every day.");
+        return;
+      }
+      var pd = w.querySelector("#gpickdate"), pt = w.querySelector("#gpicktime");
+      if(pd) gdraft.date = pd.value; if(pt) gdraft.time = pt.value;
+      var gDate = gdraft.when === "today" ? TODAY
+        : gdraft.when === "tomorrow" ? shiftKey(TODAY,1)
+        : gdraft.when === "pick" ? (gdraft.date || shiftKey(TODAY,1)) : "";
+      var gTime = gdraft.when === "pick" ? (gdraft.time || "") : "";
+      state.tasks.push({ id:uid(), title:gv, date:gDate, time:gTime, goalId:goalId, projectId:"", tags:[], subs:[], pri:0, star:false, notes:"", done:false, createdDay:TODAY });
+      gdraft.text = ""; save(); paint(); render();
+      toast(gDate ? (gTime ? "Set for " + dayTitle(gDate) + " at " + gTime + "." : "Set for " + dayTitle(gDate) + ".") : "Added with no date.");
       return;
     }
     if(d.gfill != null){ g.fill = !g.fill; save(); paint(); render(); return; }
@@ -2201,7 +2224,11 @@ document.addEventListener("click", function(e){
   if(!el) return;
   var d = el.dataset;
   if(el.getAttribute("role") === "tab" && d.tab){ go(d.tab); return; }
-  if(d.go){ go(d.go); return; }
+  if(d.go){
+    if(d.go === "board"){ openBoard(); return; }
+    if(d.go === "settings"){ openSettings(); return; }
+    go(d.go); return;
+  }
   if(d.toggle){ toggle(d.toggle, d.kind); return; }
   if(d.more){ openRowMenu(d.more, d.kind); return; }
   if(d.open){ openTask(d.open); return; }
@@ -2287,7 +2314,7 @@ document.addEventListener("click", function(e){
   }
   if(id === "ibadd"){
     var ii = document.getElementById("ibin"); var v2 = ii ? ii.value.trim().slice(0,200) : "";
-    if(!v2){ if(ii) ii.focus(); return; }
+    if(!v2){ if(ii){ ii.classList.add("nudgeme"); ii.focus(); setTimeout(function(){ ii.classList.remove("nudgeme"); }, 500); } toast("Write it down first."); return; }
     state.inbox.push({ id:uid(), t:v2, d:TODAY }); state.inboxUsed = true; save(); render(); toast("Captured."); return;
   }
 });
@@ -2322,7 +2349,8 @@ document.addEventListener("keydown", function(e){
 function quickAdd2(){
   var el = document.getElementById("qadd"); if(!el) return;
   if(sub === "calendar" && tab === "more"){
-    var v = el.value.trim().slice(0,200); if(!v){ el.focus(); return; }
+    var v = el.value.trim().slice(0,200);
+    if(!v){ el.classList.add("nudgeme"); toast("Type the task first."); setTimeout(function(){ el.classList.remove("nudgeme"); }, 500); el.focus(); return; }
     var p = parseQuick(v); p.date = dayPick;
     state.tasks.push({ id:uid(), title:p.title||v, date:dayPick, time:"", goalId:"", projectId:"", tags:p.tags, subs:[], pri:p.pri, star:p.star, notes:"", done:false, createdDay:TODAY });
     el.value = ""; checkBadges(); save(); render(); toast("Added to " + dayTitle(dayPick) + ".");
