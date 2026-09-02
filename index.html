@@ -219,16 +219,16 @@
   .focusline b{font-size:12px; color:var(--amber); font-weight:600; white-space:nowrap}
 
   /* ---------- goals ---------- */
-  .gposter{position:relative; display:block; width:100%; text-align:left; border-radius:20px; overflow:hidden; background:var(--card); border:1px solid var(--line); height:clamp(220px,40vh,400px); margin-bottom:10px}
+  .gposter{position:relative; isolation:isolate; z-index:0; display:block; width:100%; text-align:left; border-radius:20px; overflow:hidden; background:var(--card); border:1px solid var(--line); height:clamp(220px,40vh,400px); margin-bottom:10px}
   .gposter:active{filter:brightness(1.07)}
   .gposter img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover}
-  .gposter .scrim{position:absolute; inset:0; background:linear-gradient(180deg,rgba(18,21,31,.05) 30%,rgba(18,21,31,.55) 62%,rgba(18,21,31,.95) 100%)}
+  .gposter .gshade{position:absolute; inset:0; z-index:0; pointer-events:none; background:linear-gradient(180deg,rgba(18,21,31,.05) 30%,rgba(18,21,31,.55) 62%,rgba(18,21,31,.95) 100%)}
   .gposter .init{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--display); font-weight:800; font-size:110px; color:var(--amber); opacity:.28}
-  .gposter .low{position:absolute; left:16px; right:16px; bottom:15px}
+  .gposter .low{position:absolute; z-index:1; left:16px; right:16px; bottom:15px}
   .gposter .low b{display:block; font-family:var(--display); font-weight:700; font-size:25px; line-height:1.15; margin-bottom:4px; color:#fff; text-shadow:0 1px 10px rgba(0,0,0,.45)}
   .gposter .low i{display:block; font-style:normal; font-size:13px; color:rgba(255,255,255,.88); margin-bottom:9px}
   .gposter .low .bar{background:rgba(255,255,255,.25)}
-  .gposter .pctb,.gposter .areab{position:absolute; top:13px; font-family:var(--display); font-weight:700; font-size:14px; color:#fff; background:rgba(0,0,0,.45); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); padding:6px 12px; border-radius:99px}
+  .gposter .pctb,.gposter .areab{position:absolute; z-index:1; top:13px; font-family:var(--display); font-weight:700; font-size:14px; color:#fff; background:rgba(0,0,0,.45); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); padding:6px 12px; border-radius:99px}
   .gposter .pctb{right:13px} .gposter .areab{left:13px; font-family:var(--body); font-weight:600; font-size:12px}
   .gpanel{background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:12px; margin:-2px 0 14px; animation:panelin .16s ease}
   @keyframes panelin{from{opacity:0; transform:translateY(-6px)} to{opacity:1; transform:none}}
@@ -337,8 +337,8 @@
   .mgrid b{display:block; font-size:12.5px; margin-top:7px; font-weight:600}
 
   /* ---------- pages / sheets / overlays ---------- */
-  .page{position:fixed; inset:0; z-index:40; background:var(--ink); overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch}
-  .pbar{position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:8px; background:rgba(18,21,31,.92); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); padding:calc(10px + var(--sat)) 14px 10px; border-bottom:1px solid var(--line)}
+  .page{position:fixed; inset:0; z-index:50; isolation:isolate; background:var(--ink); overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch}
+  .pbar{position:sticky; top:0; z-index:6; display:flex; align-items:center; gap:8px; background:rgba(18,21,31,.92); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); padding:calc(10px + var(--sat)) 14px 10px; border-bottom:1px solid var(--line)}
   .pbar .back{font-size:16.5px; color:var(--amber); font-weight:600; padding:10px 14px 10px 6px; margin:-8px 0}
   .pbar .sp{flex:1}
   .pwrap{max-width:640px; margin:0 auto; padding:16px 16px 60px}
@@ -405,7 +405,7 @@
 "use strict";
 
 /* ================= storage & migration ================= */
-var KEY = "momentum:v1", BUILD = "v27";
+var KEY = "momentum:v1", BUILD = "v28";
 var state = {
   v:2, name:"", accent:"amber", mode:"night", onboarded:false,
   tasks:[], habits:[], goals:[], projects:[], areas:["Health","Work","Money","Learning","Home","People"],
@@ -761,7 +761,23 @@ function confirmSheet(title, body, okLabel, fn, danger){
   sheetOpen('<h2>' + title + '</h2><p>' + body + '</p><div class="sheetbtns"><button class="ghost" data-close="1">Cancel</button><button class="' + (danger ? "danger" : "solid") + '" id="cok">' + okLabel + '</button></div>',
     function(w){ w.querySelector("#cok").onclick = function(){ w.remove(); fn(); }; });
 }
-function pageOpen(){ var w = document.createElement("div"); w.className = "page"; document.body.appendChild(w); return w; }
+function pageOpen(){
+  var w = document.createElement("div"); w.className = "page"; document.body.appendChild(w);
+  // last-resort escape: a real Back always exists, even if a paint fails
+  w.addEventListener("click", function(ev){
+    var b = ev.target.closest("[data-hardback]"); if(!b) return;
+    goalRepaint = null; w.remove(); render();
+  });
+  return w;
+}
+function safePaint(w, fn, backLabel){
+  try{ fn(); }
+  catch(err){
+    w.innerHTML = '<div class="pbar"><button class="back" data-hardback="1">\u2039 ' + (backLabel||"Back") + '</button></div>' +
+      '<div class="pwrap"><div class="empty">Something went wrong drawing this page.<br>Your data is safe \u2014 tap Back and try again.</div></div>';
+    try{ console.error("paint failed", err); }catch(e){}
+  }
+}
 var foldSt = { timer:false, rep:true, late:true, now:true, donef:false, someday:false, inbox:true };
 function fold(key, label, count, body, extra, hot){
   var open = !!foldSt[key];
@@ -995,7 +1011,8 @@ function openTaskFilter(){
 function openTask(id){
   var t = byId(state.tasks, id); if(!t) return;
   var w = pageOpen();
-  function paint(){
+  function paint(){ safePaint(w, paintInner, "Back"); }
+  function paintInner(){
     t = byId(state.tasks, id); if(!t){ w.remove(); return; }
     var y = w.scrollTop;
     var h = '<div class="pbar"><button class="back" data-back="1">‹ Back</button><span class="sp"></span>' +
@@ -1035,7 +1052,7 @@ function openTask(id){
     t.goalId = g("#tgoal"); t.projectId = g("#tproj"); t.notes = g("#tnotes").slice(0,2000);
   }
   w.addEventListener("click", function(ev){
-    var b = ev.target.closest("[data-back],[data-tdel],[data-tdup],[data-setpri],[data-star],[data-subflip],[data-subdel],[data-subadd],[data-tmove],[data-tfocus],#tsave,[data-toggle]");
+    var b = ev.target.closest("[data-hardback],[data-back],[data-tdel],[data-tdup],[data-setpri],[data-star],[data-subflip],[data-subdel],[data-subadd],[data-tmove],[data-tfocus],#tsave,[data-toggle]");
     if(!b) return;
     var d = b.dataset;
     if(d.back != null){ readForm(); save(); w.remove(); render(); return; }
@@ -1114,7 +1131,7 @@ function gcardHTML(g){
   var ids = goalShots(g), pct = goalPct(g), open = expandedGoal === g.id;
   var h = '<button class="gposter" data-gopen="' + g.id + '" aria-expanded="' + open + '">' +
     (ids.length ? '<img src="' + SHOTS[ids[0]].src + '" alt="" loading="lazy">' : '<span class="init">' + esc((g.title||"?").trim().charAt(0).toUpperCase()) + '</span>') +
-    '<span class="scrim"></span><span class="pctb">' + pct + '%</span>' + (g.area ? '<span class="areab">' + esc(g.area) + '</span>' : '') +
+    '<span class="gshade"></span><span class="pctb">' + pct + '%</span>' + (g.area ? '<span class="areab">' + esc(g.area) + '</span>' : '') +
     '<span class="low"><b>' + esc(g.title) + '</b><i>' + goalNote(g) + esc(dueLabel(g)) + '</i><span class="bar"><i style="width:' + pct + '%"></i></span></span></button>';
   if(open){
     var nx = state.tasks.filter(function(t){ return t.goalId === g.id && !t.done; }).sort(by(function(t){ return t.date||"9999"; })).slice(0,3);
@@ -1132,7 +1149,8 @@ function gcardHTML(g){
 }
 function openGoal(goalId){
   var w = pageOpen(), gdraft = { when:"today", text:"" }, showAll = false, tabG = "plan";
-  function paint(){
+  function paint(){ safePaint(w, paintInner, "Goals"); }
+  function paintInner(){
     var g = byId(state.goals, goalId); if(!g){ w.remove(); return; }
     var y = w.scrollTop, ids = goalShots(g), pct = goalPct(g), st = goalStats(g);
     var h = '<div class="pbar"><button class="back" data-gback="1">‹ Goals</button><span class="sp"></span>' +
@@ -1343,7 +1361,7 @@ function openBoard(){
   var w = pageOpen();
   w.innerHTML = '<div class="pbar"><button class="back" data-back="1">‹ Goals</button><span class="sp"></span><b>Vision board</b></div><div class="pwrap">' +
     (list.length ? list.map(function(s,i){
-      return '<button class="gposter" style="height:clamp(200px,34vh,340px)" data-cell="' + i + '"><img src="' + SHOTS[s.id].src + '" alt=""><span class="scrim"></span>' +
+      return '<button class="gposter" style="height:clamp(200px,34vh,340px)" data-cell="' + i + '"><img src="' + SHOTS[s.id].src + '" alt=""><span class="gshade"></span>' +
         '<span class="pctb">' + goalPct(s.g) + '%</span><span class="low"><b>' + esc(s.g.title) + '</b><i>' + goalNote(s.g) + '</i></span></button>'; }).join("")
     : '<div class="empty">Nothing pinned yet. Open a goal and add a picture of what it looks like when you get there.</div>') + '</div>';
   w.addEventListener("click", function(ev){
@@ -1376,7 +1394,8 @@ function viewHabits(){
 function openHabitStats(id){
   var x = byId(state.habits, id); if(!x) return;
   var w = pageOpen();
-  function paint(){
+  function paint(){ safePaint(w, paintInner, "Habits"); }
+  function paintInner(){
     x = byId(state.habits, id); if(!x){ w.remove(); return; }
     var run = habitRun(x), best = habitBest(x), total = Object.keys(x.log||{}).length;
     var hm = "", k = shiftKey(TODAY,-139);
@@ -1748,7 +1767,8 @@ function viewProjects(){
 function openProject(id){
   var p = byId(state.projects, id); if(!p) return;
   var w = pageOpen();
-  function paint(){
+  function paint(){ safePaint(w, paintInner, "Projects"); }
+  function paintInner(){
     p = byId(state.projects, id); if(!p){ w.remove(); return; }
     var all = state.tasks.filter(function(t){ return t.projectId === id; });
     var open = all.filter(function(t){ return !t.done; }), dn = all.filter(function(t){ return t.done; });
@@ -2290,7 +2310,7 @@ var recovering = false;
 window.addEventListener("error", function(){
   if(recovering) return; recovering = true;
   setTimeout(function(){ recovering = false; }, 4000);
-  try{ document.querySelectorAll(".page,.viewer,.scrim").forEach(function(n){ n.remove(); }); render(); toast("Recovered — your data is safe."); }catch(e){}
+  try{ document.querySelectorAll(".page,.viewer,.scrim,.party").forEach(function(n){ n.remove(); }); render(); toast("Recovered — your data is safe."); }catch(e){}
 });
 
 /* ================= BOOT ================= */
