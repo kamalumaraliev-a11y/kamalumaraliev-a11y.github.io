@@ -342,8 +342,8 @@
   .pbar .back{font-size:16.5px; color:var(--amber); font-weight:600; padding:10px 14px 10px 6px; margin:-8px 0}
   .pbar .sp{flex:1}
   .pwrap{max-width:640px; margin:0 auto; padding:16px 16px 60px}
-  .scrim{position:fixed; inset:0; z-index:60; background:rgba(8,10,16,.72); display:flex; align-items:flex-end; justify-content:center}
-  .sheet{width:100%; max-width:640px; max-height:calc(100dvh - var(--sat) - 40px); overflow-y:auto; background:var(--card); border:1px solid var(--line); border-radius:22px 22px 0 0; padding:18px 18px calc(18px + var(--sab)); animation:up .2s ease}
+  .scrim{position:fixed; inset:0; z-index:60; background:rgba(8,10,16,.72); display:flex; align-items:flex-end; justify-content:center; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain}
+  .sheet{width:100%; max-width:640px; margin-top:auto; max-height:none; overflow:visible; background:var(--card); border:1px solid var(--line); border-radius:22px 22px 0 0; padding:18px 18px calc(18px + var(--sab)); animation:up .2s ease}
   .sheet h2{font-size:20px; margin-bottom:8px}
   .sheet .when{font-size:12.5px; color:var(--amber); font-weight:600; margin-bottom:6px}
   .sheet p{font-size:14px; line-height:1.5; color:var(--soft)}
@@ -357,12 +357,14 @@
   .menu .mrow:last-child{border-bottom:none}
   .menu .mrow .mi{width:26px; text-align:center; color:var(--dim)}
   .menu .mrow.red{color:var(--red)}
-  .viewer{position:fixed; inset:0; z-index:70; background:rgba(8,10,16,.97); display:flex; flex-direction:column; padding:calc(14px + var(--sat)) 14px 14px}
-  .vclose{position:absolute; top:calc(14px + var(--sat)); right:14px; z-index:3; width:38px; height:38px; border-radius:12px; background:rgba(27,32,48,.8); color:var(--text); font-size:16px}
-  .vstage{position:relative; flex:1; min-height:0; display:flex; align-items:center; justify-content:center}
-  .vstage img{max-width:100%; max-height:100%; border-radius:14px}
-  .vtap{position:absolute; top:0; bottom:0; width:34%} .vtap.l{left:0} .vtap.r{right:0}
-  .vmeta{max-width:640px; margin:10px auto 0; width:100%}
+  .vstage{position:relative; width:100%; height:min(66vh,560px); display:flex; align-items:center; justify-content:center;
+    background:var(--ink-2); border:1px solid var(--line); border-radius:18px; overflow:hidden; margin-bottom:14px}
+  .vstage img{max-width:100%; max-height:100%; object-fit:contain; border-radius:14px}
+  .vtap{position:absolute; top:0; bottom:0; width:34%; z-index:2} .vtap.l{left:0} .vtap.r{right:0}
+  .vnav{position:absolute; z-index:3; top:50%; transform:translateY(-50%); width:40px; height:40px; border-radius:50%;
+    background:rgba(0,0,0,.5); color:#fff; font-size:20px; display:flex; align-items:center; justify-content:center}
+  .vnav.l{left:10px} .vnav.r{right:10px}
+  .vmeta{max-width:640px; margin:0 auto; width:100%}
   .vmeta h3{font-size:18px; margin-bottom:4px} .vmeta p{font-size:13.5px; color:var(--soft); margin:0 0 8px}
   .toast{position:fixed; left:50%; bottom:calc(100px + var(--sab)); transform:translateX(-50%); background:var(--card-3); border:1px solid var(--line-2); color:var(--text); padding:10px 16px; border-radius:12px; font-size:14px; z-index:80; max-width:90vw; box-shadow:0 8px 30px rgba(0,0,0,.4); animation:up .2s ease; display:flex; align-items:center; gap:12px}
   .toast button{color:var(--amber); font-weight:700}
@@ -405,7 +407,7 @@
 "use strict";
 
 /* ================= storage & migration ================= */
-var KEY = "momentum:v1", BUILD = "v31";
+var KEY = "momentum:v1", BUILD = "v32";
 var state = {
   v:2, name:"", accent:"amber", mode:"night", onboarded:false,
   tasks:[], habits:[], goals:[], projects:[], areas:["Health","Work","Money","Learning","Home","People"],
@@ -1370,38 +1372,64 @@ function openViewer(goalId, idx){
   var g = byId(state.goals, goalId); if(!g) return;
   var ids = goalShots(g); if(!ids.length) return;
   var i = clamp(idx||0, 0, ids.length-1);
-  var w = document.createElement("div"); w.className = "viewer"; document.body.appendChild(w);
-  function paint(){
+  var w = pageOpen();
+  function paint(){ safePaint(w, paintInner, "Back"); }
+  function paintInner(){
+    g = byId(state.goals, goalId);
+    if(!g){ pageClose(w); render(); return; }
+    ids = goalShots(g);
+    if(!ids.length){ pageClose(w); render(); return; }
+    i = clamp(i, 0, ids.length-1);
     var rec = SHOTS[ids[i]];
-    w.innerHTML = '<button class="vclose" data-vc="1">✕</button>' +
-      '<div class="vstage"><img src="' + rec.src + '" alt=""><div class="vtap l" data-vp="-1"></div><div class="vtap r" data-vp="1"></div></div>' +
-      '<div class="vmeta"><h3>' + esc(g.title) + '</h3><p>' + esc(rec.cap || "Tap the sides to move between pictures.") + '</p>' +
-      '<div class="btns" style="margin:0"><button class="btn sm" data-vcap="1">' + (rec.cap?"Edit caption":"Add caption") + '</button>' +
-      (ids.length > 1 ? '<button class="btn sm" data-vfirst="1">Make cover</button>' : '') +
-      '<button class="btn sm danger" data-vdel="1">Delete</button></div>' +
-      '<div class="quiet" style="margin-top:8px">' + (i+1) + ' of ' + ids.length + ' · added ' + dayTitle(rec.day||TODAY) + '</div></div>';
+    w.innerHTML = '<div class="pbar"><button class="back" data-back="1">\u2039 Back</button><span class="sp"></span>' +
+        '<span class="quiet">' + (i+1) + ' of ' + ids.length + '</span></div>' +
+      '<div class="pwrap">' +
+        '<div class="vstage">' +
+          '<img src="' + rec.src + '" alt="' + esc(g.title) + '">' +
+          (ids.length > 1 ? '<button class="vtap l" data-vp="-1" aria-label="Previous"></button><button class="vtap r" data-vp="1" aria-label="Next"></button>' +
+            '<span class="vnav l">\u2039</span><span class="vnav r">\u203a</span>' : '') +
+        '</div>' +
+        '<div class="vmeta"><h1 class="ptitle">' + esc(g.title) + '</h1>' +
+          '<p class="pwhy">' + esc(rec.cap || (ids.length > 1 ? "Tap the sides of the picture to move between them." : "A picture of where this is going.")) + '</p>' +
+          '<div class="btns"><button class="btn sm" data-vcap="1">' + (rec.cap ? "Edit caption" : "Add caption") + '</button>' +
+            (ids.length > 1 ? '<button class="btn sm" data-vfirst="1">Make cover</button>' : '') +
+            '<button class="btn sm" data-addshot="' + g.id + '">+ Picture</button>' +
+            '<button class="btn sm danger" data-vdel="1">Delete picture</button></div>' +
+          '<p class="quiet">Added ' + dayTitle(rec.day||TODAY) + ' \u00b7 goal is ' + goalPct(g) + '% there.</p>' +
+        '</div></div>';
   }
   w.addEventListener("click", function(ev){
-    var b = ev.target.closest("[data-vc],[data-vp],[data-vcap],[data-vdel],[data-vfirst]"); if(!b) return;
+    var b = ev.target.closest("[data-back],[data-vp],[data-vcap],[data-vdel],[data-vfirst]");
+    if(!b) return;
     var d = b.dataset;
-    if(d.vc != null){ w.remove(); return; }
-    if(d.vp){ i = clamp(i + (+d.vp), 0, ids.length-1); paint(); return; }
-    if(d.vfirst != null){ var id = ids[i]; g.shots = [id].concat(g.shots.filter(function(x){ return x !== id; })); ids = goalShots(g); i = 0; save(); paint(); render(); if(goalRepaint) goalRepaint(); toast("That's the cover now."); return; }
+    if(d.back != null){ pageClose(w); render(); if(goalRepaint) goalRepaint(); return; }
+    if(d.vp){ i = clamp(i + (+d.vp), 0, ids.length-1); paint(); window.scrollTo(0,0); return; }
+    if(d.vfirst != null){
+      var id0 = ids[i];
+      g.shots = [id0].concat((g.shots||[]).filter(function(x){ return x !== id0; }));
+      i = 0; save(); paint(); render(); if(goalRepaint) goalRepaint(); toast("That's the cover now."); return;
+    }
     if(d.vcap != null){
-      var rec = SHOTS[ids[i]];
-      sheetOpen('<h2>Caption</h2><label class="fl"><span>What does this picture mean?</span><input class="in" id="vc" maxlength="90" value="' + esc(rec.cap||"") + '"></label><div class="sheetbtns"><button class="ghost" data-close="1">Cancel</button><button class="solid" id="vcs">Save</button></div>',
-        function(sw){ sw.querySelector("#vcs").onclick = function(){ rec.cap = sw.querySelector("#vc").value.trim().slice(0,90); shotPut(rec); sw.remove(); paint(); }; });
+      var rec2 = SHOTS[ids[i]];
+      sheetOpen('<h2>Caption</h2><label class="fl"><span>What does this picture mean?</span>' +
+        '<input class="in" id="vc" maxlength="90" value="' + esc(rec2.cap||"") + '"></label>' +
+        '<div class="sheetbtns"><button class="ghost" data-close="1">Cancel</button><button class="solid" id="vcs">Save</button></div>',
+        function(sw){ sw.querySelector("#vcs").onclick = function(){
+          rec2.cap = sw.querySelector("#vc").value.trim().slice(0,90); shotPut(rec2); sw.remove(); paint(); }; });
       return;
     }
     if(d.vdel != null){
       confirmSheet("Delete this picture?", "It's removed from this goal for good.", "Delete", function(){
-        var id = ids[i]; g.shots = (g.shots||[]).filter(function(x){ return x !== id; }); shotDrop(id); save();
-        ids = goalShots(g); if(!ids.length){ pageClose(w); render(); if(goalRepaint) goalRepaint(); return; }
+        var id1 = ids[i];
+        g.shots = (g.shots||[]).filter(function(x){ return x !== id1; });
+        shotDrop(id1); save();
+        ids = goalShots(g);
+        if(!ids.length){ pageClose(w); render(); if(goalRepaint) goalRepaint(); return; }
         i = clamp(i, 0, ids.length-1); paint(); render(); if(goalRepaint) goalRepaint();
       }, true);
     }
   });
-  paint();
+  paint(); window.scrollTo(0,0);
 }
 function openBoard(){
   var list = []; state.goals.forEach(function(g){ goalShots(g).forEach(function(id){ list.push({ g:g, id:id }); }); });
