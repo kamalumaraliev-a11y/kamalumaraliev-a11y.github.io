@@ -337,7 +337,7 @@
   .mgrid b{display:block; font-size:12.5px; margin-top:7px; font-weight:600}
 
   /* ---------- pages / sheets / overlays ---------- */
-  .page{position:fixed; inset:0; z-index:50; isolation:isolate; background:var(--ink); overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch}
+  .page{position:relative; z-index:1; background:var(--ink); min-height:100dvh; padding-bottom:calc(30px + var(--sab))}
   .pbar{position:sticky; top:0; z-index:6; display:flex; align-items:center; gap:8px; background:rgba(18,21,31,.92); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); padding:calc(10px + var(--sat)) 14px 10px; border-bottom:1px solid var(--line)}
   .pbar .back{font-size:16.5px; color:var(--amber); font-weight:600; padding:10px 14px 10px 6px; margin:-8px 0}
   .pbar .sp{flex:1}
@@ -405,7 +405,7 @@
 "use strict";
 
 /* ================= storage & migration ================= */
-var KEY = "momentum:v1", BUILD = "v28";
+var KEY = "momentum:v1", BUILD = "v29";
 var state = {
   v:2, name:"", accent:"amber", mode:"night", onboarded:false,
   tasks:[], habits:[], goals:[], projects:[], areas:["Health","Work","Money","Learning","Home","People"],
@@ -761,12 +761,36 @@ function confirmSheet(title, body, okLabel, fn, danger){
   sheetOpen('<h2>' + title + '</h2><p>' + body + '</p><div class="sheetbtns"><button class="ghost" data-close="1">Cancel</button><button class="' + (danger ? "danger" : "solid") + '" id="cok">' + okLabel + '</button></div>',
     function(w){ w.querySelector("#cok").onclick = function(){ w.remove(); fn(); }; });
 }
+var pageStack = [];
+function syncChrome(){
+  var n = pageStack.length;
+  var app = document.getElementById("app"), nav = document.querySelector(".navwrap"), fab = document.getElementById("fab");
+  if(app) app.style.display = n ? "none" : "";
+  if(nav) nav.style.display = n ? "none" : "";
+  if(fab) fab.style.display = n ? "none" : "";
+  pageStack.forEach(function(p, i){ p.style.display = (i === n - 1) ? "" : "none"; });
+}
+function pageClose(w){
+  if(pageStack.indexOf(w) < 0){ if(w && w.parentNode) w.remove(); return; } // a sheet, not a page
+  pageStack = pageStack.filter(function(p){ return p !== w; });
+  if(w && w.parentNode) w.remove();
+  if(!pageStack.length) goalRepaint = null;
+  syncChrome();
+  window.scrollTo(0, 0);
+}
+function closeTopPage(){
+  if(!pageStack.length) return false;
+  pageClose(pageStack[pageStack.length - 1]);
+  render();
+  return true;
+}
 function pageOpen(){
   var w = document.createElement("div"); w.className = "page"; document.body.appendChild(w);
+  pageStack.push(w); syncChrome(); window.scrollTo(0, 0);
   // last-resort escape: a real Back always exists, even if a paint fails
   w.addEventListener("click", function(ev){
     var b = ev.target.closest("[data-hardback]"); if(!b) return;
-    goalRepaint = null; w.remove(); render();
+    pageClose(w); render();
   });
   return w;
 }
@@ -1003,9 +1027,9 @@ function openTaskFilter(){
         if(d.ftag) taskFilter.tag = taskFilter.tag === d.ftag ? "" : d.ftag;
         if(d.fproj) taskFilter.proj = taskFilter.proj === d.fproj ? "" : d.fproj;
         if(d.fgoal) taskFilter.goal = taskFilter.goal === d.fgoal ? "" : d.fgoal;
-        w.remove(); render(); openTaskFilter();
+        pageClose(w); render(); openTaskFilter();
       });
-      w.querySelector("#fclear").onclick = function(){ taskFilter = { tag:"", proj:"", goal:"", pri:0, q:"" }; w.remove(); render(); };
+      w.querySelector("#fclear").onclick = function(){ taskFilter = { tag:"", proj:"", goal:"", pri:0, q:"" }; pageClose(w); render(); };
     });
 }
 function openTask(id){
@@ -1013,8 +1037,8 @@ function openTask(id){
   var w = pageOpen();
   function paint(){ safePaint(w, paintInner, "Back"); }
   function paintInner(){
-    t = byId(state.tasks, id); if(!t){ w.remove(); return; }
-    var y = w.scrollTop;
+    t = byId(state.tasks, id); if(!t){ pageClose(w); return; }
+    var y = window.pageYOffset;
     var h = '<div class="pbar"><button class="back" data-back="1">‹ Back</button><span class="sp"></span>' +
       '<button class="btn sm" data-tdup="1">Duplicate</button><button class="btn sm danger" data-tdel="1">Delete</button></div><div class="pwrap">';
     h += '<div class="row mb"><button class="box" data-toggle="' + t.id + '" data-kind="task" style="width:34px;height:34px;border-radius:11px;border:1.7px solid ' + (t.done?"var(--mint)":"var(--dim)") + ';background:' + (t.done?"var(--mint)":"none") + '">' + CHECK + '</button>' +
@@ -1042,7 +1066,7 @@ function openTask(id){
       '<button class="btn" data-tfocus="1">Focus on this</button></div>';
     if(t.done && t.doneAt) h += '<p class="quiet">Completed ' + dayTitle(t.doneDay) + ' at ' + timeStr(t.doneAt) + '.</p>';
     h += '</div>';
-    w.innerHTML = h; w.scrollTop = y;
+    w.innerHTML = h; window.scrollTo(0, y);
   }
   function readForm(){
     var g = function(i){ var e = w.querySelector(i); return e ? e.value : ""; };
@@ -1055,20 +1079,20 @@ function openTask(id){
     var b = ev.target.closest("[data-hardback],[data-back],[data-tdel],[data-tdup],[data-setpri],[data-star],[data-subflip],[data-subdel],[data-subadd],[data-tmove],[data-tfocus],#tsave,[data-toggle]");
     if(!b) return;
     var d = b.dataset;
-    if(d.back != null){ readForm(); save(); w.remove(); render(); return; }
+    if(d.back != null){ readForm(); save(); pageClose(w); render(); return; }
     if(d.toggle){ toggle(d.toggle, "task"); paint(); return; }
-    if(d.tdel != null){ confirmSheet("Delete this task?", "It disappears for good.", "Delete", function(){ state.tasks = state.tasks.filter(function(x){ return x.id !== id; }); save(); w.remove(); render(); toast("Deleted."); }, true); return; }
-    if(d.tdup != null){ var c = JSON.parse(JSON.stringify(t)); c.id = uid(); c.done = false; delete c.doneAt; delete c.doneDay; c.subs = (c.subs||[]).map(function(s){ return { id:uid(), t:s.t, done:false }; }); state.tasks.push(c); save(); toast("Duplicated."); w.remove(); render(); openTask(c.id); return; }
+    if(d.tdel != null){ confirmSheet("Delete this task?", "It disappears for good.", "Delete", function(){ state.tasks = state.tasks.filter(function(x){ return x.id !== id; }); save(); pageClose(w); render(); toast("Deleted."); }, true); return; }
+    if(d.tdup != null){ var c = JSON.parse(JSON.stringify(t)); c.id = uid(); c.done = false; delete c.doneAt; delete c.doneDay; c.subs = (c.subs||[]).map(function(s){ return { id:uid(), t:s.t, done:false }; }); state.tasks.push(c); save(); toast("Duplicated."); pageClose(w); render(); openTask(c.id); return; }
     if(d.setpri){ t.pri = t.pri === +d.setpri ? 0 : +d.setpri; save(); paint(); return; }
     if(d.star != null){ t.star = !t.star; save(); paint(); return; }
     if(d.subflip){ (t.subs||[]).forEach(function(s){ if(s.id === d.subflip) s.done = !s.done; }); save(); paint(); return; }
     if(d.subdel){ t.subs = (t.subs||[]).filter(function(s){ return s.id !== d.subdel; }); save(); paint(); return; }
     if(d.subadd != null){ var i = w.querySelector("#newsub"), v = i ? i.value.trim().slice(0,120) : ""; if(!v){ if(i) i.focus(); return; } t.subs = t.subs||[]; t.subs.push({ id:uid(), t:v, done:false }); save(); paint(); return; }
     if(d.tmove != null){ readForm(); t.date = shiftKey(TODAY,1); save(); paint(); toast("Moved to tomorrow."); return; }
-    if(d.tfocus != null){ readForm(); save(); w.remove(); openFocus(t.id); return; }
+    if(d.tfocus != null){ readForm(); save(); pageClose(w); openFocus(t.id); return; }
     if(b.id === "tsave"){ readForm(); save(); render(); paint(); toast("Saved."); return; }
   });
-  paint(); w.scrollTop = 0;
+  paint(); window.scrollTo(0, 0);
 }
 function openRowMenu(id, kind){
   var isH = kind === "habit", o = isH ? byId(state.habits, id) : byId(state.tasks, id);
@@ -1151,8 +1175,8 @@ function openGoal(goalId){
   var w = pageOpen(), gdraft = { when:"today", text:"" }, showAll = false, tabG = "plan";
   function paint(){ safePaint(w, paintInner, "Goals"); }
   function paintInner(){
-    var g = byId(state.goals, goalId); if(!g){ w.remove(); return; }
-    var y = w.scrollTop, ids = goalShots(g), pct = goalPct(g), st = goalStats(g);
+    var g = byId(state.goals, goalId); if(!g){ pageClose(w); return; }
+    var y = window.pageYOffset, ids = goalShots(g), pct = goalPct(g), st = goalStats(g);
     var h = '<div class="pbar"><button class="back" data-gback="1">‹ Goals</button><span class="sp"></span>' +
       '<button class="btn sm" data-gedit="1">Edit</button><button class="btn sm danger" data-gdel="1">Delete</button></div><div class="pwrap">';
     h += ids.length
@@ -1229,14 +1253,14 @@ function openGoal(goalId){
         '<button data-addshot="' + g.id + '">+</button></div></div>';
     }
     h += '</div>';
-    w.innerHTML = h; w.scrollTop = y;
+    w.innerHTML = h; window.scrollTo(0, y);
   }
   w.addEventListener("click", function(ev){
     var b = ev.target.closest("[data-gback],[data-gdel],[data-gedit],[data-gtab],[data-mileflip],[data-miledel],[data-mileadd],[data-noteadd],[data-gadd],[data-gwhen],[data-gfill],[data-gmore],[data-vopenat]");
     if(!b) return;
     var g = byId(state.goals, goalId); if(!g) return;
     var d = b.dataset;
-    if(d.gback != null){ goalRepaint = null; w.remove(); render(); return; }
+    if(d.gback != null){ pageClose(w); render(); return; }
     if(d.gtab){ tabG = d.gtab; paint(); return; }
     if(d.gedit != null) return openGoalEdit(goalId, paint);
     if(d.gdel != null){ confirmSheet("Delete this goal?", "Its milestones, notes and pictures go with it. Tasks stay but lose the link.", "Delete", function(){
@@ -1244,7 +1268,7 @@ function openGoal(goalId){
       state.tasks.forEach(function(t){ if(t.goalId === goalId) t.goalId = ""; });
       state.habits.forEach(function(x){ if(x.goalId === goalId) x.goalId = ""; });
       state.goals = state.goals.filter(function(x){ return x.id !== goalId; });
-      goalRepaint = null; save(); w.remove(); render(); toast("Goal deleted.");
+      save(); pageClose(w); render(); toast("Goal deleted.");
     }, true); return; }
     if(d.mileflip){
       var mid = d.mileflip.split(":")[1];
@@ -1270,7 +1294,7 @@ function openGoal(goalId){
     if(d.vopenat != null){ openViewer(goalId, +d.vopenat); return; }
   });
   goalRepaint = paint;
-  paint(); w.scrollTop = 0;
+  paint(); window.scrollTo(0, 0);
 }
 var goalRepaint = null;
 function openGoalEdit(goalId, after){
@@ -1291,7 +1315,7 @@ function openGoalEdit(goalId, after){
         g.title = v; g.why = w.querySelector("#ge2").value.trim().slice(0,160);
         g.target = +w.querySelector("#ge3").value || 0; g.unit = w.querySelector("#ge4").value.trim().slice(0,16);
         g.due = w.querySelector("#ge5").value; g.area = w.querySelector("#ge6").value; g.down = w.querySelector("#ge7").value === "down";
-        save(); w.remove(); render(); if(after) after(); toast("Goal updated.");
+        save(); pageClose(w); render(); if(after) after(); toast("Goal updated.");
       };
     });
 }
@@ -1313,7 +1337,7 @@ function openLog(goalId){
           g.target = t; g.unit = w.querySelector("#lu").value.trim().slice(0,16);
           g.cur = +w.querySelector("#lv").value || 0; g.log = g.log||[]; g.log.push({ d:TODAY, v:g.cur, at:Date.now() });
         }
-        checkBadges(); save(); w.remove(); render(); if(goalRepaint) goalRepaint();
+        checkBadges(); save(); pageClose(w); render(); if(goalRepaint) goalRepaint();
         toast(goalPct(g) >= 100 ? "🏆 Target reached!" : "Logged.");
         if(goalPct(g) >= 100){ var p = document.createElement("div"); p.innerHTML = partyHTML(); document.body.appendChild(p.firstChild); setTimeout(function(){ document.querySelectorAll(".party").forEach(function(n){ n.remove(); }); }, 3600); }
       };
@@ -1349,7 +1373,7 @@ function openViewer(goalId, idx){
     if(d.vdel != null){
       confirmSheet("Delete this picture?", "It's removed from this goal for good.", "Delete", function(){
         var id = ids[i]; g.shots = (g.shots||[]).filter(function(x){ return x !== id; }); shotDrop(id); save();
-        ids = goalShots(g); if(!ids.length){ w.remove(); render(); if(goalRepaint) goalRepaint(); return; }
+        ids = goalShots(g); if(!ids.length){ pageClose(w); render(); if(goalRepaint) goalRepaint(); return; }
         i = clamp(i, 0, ids.length-1); paint(); render(); if(goalRepaint) goalRepaint();
       }, true);
     }
@@ -1366,7 +1390,7 @@ function openBoard(){
     : '<div class="empty">Nothing pinned yet. Open a goal and add a picture of what it looks like when you get there.</div>') + '</div>';
   w.addEventListener("click", function(ev){
     var b = ev.target.closest("[data-back],[data-cell]"); if(!b) return;
-    if(b.dataset.back != null){ w.remove(); return; }
+    if(b.dataset.back != null){ pageClose(w); render(); return; }
     var s = list[+b.dataset.cell]; if(s) openViewer(s.g.id, goalShots(s.g).indexOf(s.id));
   });
 }
@@ -1396,7 +1420,7 @@ function openHabitStats(id){
   var w = pageOpen();
   function paint(){ safePaint(w, paintInner, "Habits"); }
   function paintInner(){
-    x = byId(state.habits, id); if(!x){ w.remove(); return; }
+    x = byId(state.habits, id); if(!x){ pageClose(w); return; }
     var run = habitRun(x), best = habitBest(x), total = Object.keys(x.log||{}).length;
     var hm = "", k = shiftKey(TODAY,-139);
     for(var i=0;i<140;i++){ hm += '<span class="hc' + (x.log && x.log[k] ? " m" : habitDueOn(x,k) ? "" : " ms") + (k===TODAY?" t":"") + '"></span>'; k = shiftKey(k,1); }
@@ -1417,13 +1441,13 @@ function openHabitStats(id){
   w.addEventListener("click", function(ev){
     var b = ev.target.closest("[data-back],[data-hedit],[data-hdel],[data-harch]"); if(!b) return;
     var d = b.dataset;
-    if(d.back != null){ w.remove(); render(); return; }
+    if(d.back != null){ pageClose(w); render(); return; }
     if(d.hedit != null) return openHabitEdit(id, paint);
     if(d.harch != null){ x.archived = !x.archived; save(); paint(); render(); return; }
     if(d.hdel != null) confirmSheet("Delete this habit?", "Its whole record goes too.", "Delete", function(){
-      state.habits = state.habits.filter(function(y){ return y.id !== id; }); save(); w.remove(); render(); toast("Deleted."); }, true);
+      state.habits = state.habits.filter(function(y){ return y.id !== id; }); save(); pageClose(w); render(); toast("Deleted."); }, true);
   });
-  paint(); w.scrollTop = 0;
+  paint(); window.scrollTo(0, 0);
 }
 var EMOJI = ["✦","💪","🏃","📚","💧","🧘","🥗","😴","✍️","🎸","💰","🧹","☎️","🌱","🚭","🧠","🙏","🚶"];
 function openHabitEdit(id, after){
@@ -1450,7 +1474,7 @@ function openHabitEdit(id, after){
         var v = w.querySelector("#he1").value.trim().slice(0,80); if(!v){ w.querySelector("#he1").focus(); return; }
         x.title = v; x.icon = icon; x.goalId = w.querySelector("#he2").value;
         x.days = (!days.length || days.length === 7) ? null : days.slice().sort();
-        save(); w.remove(); render(); if(after) after(); toast("Habit updated.");
+        save(); pageClose(w); render(); if(after) after(); toast("Habit updated.");
       };
     });
 }
@@ -1733,11 +1757,11 @@ function openNote(id){
   w.addEventListener("click", function(ev){
     var b = ev.target.closest("[data-nback],[data-ndel],[data-npin],[data-nsave]"); if(!b) return;
     var d = b.dataset;
-    if(d.nback != null){ if(readIt()){ checkBadges(); save(); } w.remove(); render(); return; }
+    if(d.nback != null){ if(readIt()){ checkBadges(); save(); } pageClose(w); render(); return; }
     if(d.nsave != null){ if(readIt()){ checkBadges(); save(); render(); toast("Saved."); } else toast("Write something first."); return; }
     if(d.npin != null){ n.pin = !n.pin; readIt(); save(); b.textContent = n.pin?"Unpin":"Pin"; render(); return; }
     if(d.ndel != null) confirmSheet("Delete this note?", "Gone for good.", "Delete", function(){
-      state.notes = state.notes.filter(function(x){ return x.id !== n.id; }); save(); w.remove(); render(); toast("Deleted."); }, true);
+      state.notes = state.notes.filter(function(x){ return x.id !== n.id; }); save(); pageClose(w); render(); toast("Deleted."); }, true);
   });
   setTimeout(function(){ try{ w.querySelector(isNew?"#nt":"#nb").focus(); }catch(e){} }, 80);
 }
@@ -1769,7 +1793,7 @@ function openProject(id){
   var w = pageOpen();
   function paint(){ safePaint(w, paintInner, "Projects"); }
   function paintInner(){
-    p = byId(state.projects, id); if(!p){ w.remove(); return; }
+    p = byId(state.projects, id); if(!p){ pageClose(w); return; }
     var all = state.tasks.filter(function(t){ return t.projectId === id; });
     var open = all.filter(function(t){ return !t.done; }), dn = all.filter(function(t){ return t.done; });
     var pct = all.length ? Math.round(dn.length/all.length*100) : 0;
@@ -1786,7 +1810,7 @@ function openProject(id){
   w.addEventListener("click", function(ev){
     var b = ev.target.closest("[data-back],[data-pdel],[data-pedit],[data-padd]"); if(!b) return;
     var d = b.dataset;
-    if(d.back != null){ w.remove(); render(); return; }
+    if(d.back != null){ pageClose(w); render(); return; }
     if(d.padd != null){ var i = w.querySelector("#pnew"), v = i ? i.value.trim().slice(0,180) : "";
       if(!v){ if(i) i.focus(); return; }
       state.tasks.push({ id:uid(), title:v, date:TODAY, time:"", goalId:p.goalId||"", projectId:id, tags:[], subs:[], pri:0, star:false, notes:"", done:false, createdDay:TODAY });
@@ -1794,9 +1818,9 @@ function openProject(id){
     if(d.pedit != null) return openProjectEdit(id, paint);
     if(d.pdel != null) confirmSheet("Delete this project?", "Tasks stay but lose the grouping.", "Delete", function(){
       state.tasks.forEach(function(t){ if(t.projectId === id) t.projectId = ""; });
-      state.projects = state.projects.filter(function(x){ return x.id !== id; }); save(); w.remove(); render(); toast("Deleted."); }, true);
+      state.projects = state.projects.filter(function(x){ return x.id !== id; }); save(); pageClose(w); render(); toast("Deleted."); }, true);
   });
-  paint(); w.scrollTop = 0;
+  paint(); window.scrollTo(0, 0);
 }
 function openProjectEdit(id, after){
   var p = id ? byId(state.projects, id) : null, isNew = !p;
@@ -1812,7 +1836,7 @@ function openProjectEdit(id, after){
       var v = w.querySelector("#pe1").value.trim().slice(0,80); if(!v){ w.querySelector("#pe1").focus(); return; }
       p.name = v; p.desc = w.querySelector("#pe2").value.trim().slice(0,160); p.due = w.querySelector("#pe3").value; p.goalId = w.querySelector("#pe4").value;
       if(isNew) state.projects.push(p);
-      save(); w.remove(); render(); if(after) after(); toast(isNew?"Project created.":"Saved.");
+      save(); pageClose(w); render(); if(after) after(); toast(isNew?"Project created.":"Saved.");
     }; });
 }
 
@@ -1869,7 +1893,7 @@ function openTemplateEdit(id){
       var v = w.querySelector("#te1").value.trim().slice(0,60); if(!v){ w.querySelector("#te1").focus(); return; }
       t.name = v; t.items = w.querySelector("#te2").value.split("\n").map(function(s){ return s.trim().slice(0,160); }).filter(Boolean).slice(0,30);
       if(isNew) state.templates.push(t);
-      save(); w.remove(); render(); toast("Saved.");
+      save(); pageClose(w); render(); toast("Saved.");
     }; });
 }
 
@@ -1989,7 +2013,7 @@ function openAdd(kind, date){
         state.projects.push({ id:uid(), name:v1.slice(0,80), desc:g("#a2").slice(0,160), due:g("#a3"), goalId:"", createdDay:TODAY });
         toast("Project created.");
       }
-      checkBadges(); save(); w.remove(); render();
+      checkBadges(); save(); pageClose(w); render();
     }
   });
 }
@@ -2024,7 +2048,7 @@ function openRecap(){
         state.history[TODAY] = { done:s.done, total:s.total, rate:s.rate, note:note };
         if(mood || note){ var j = state.journal[TODAY] || {}; if(mood) j.mood = mood; if(note && !j.text) j.text = note; state.journal[TODAY] = j; }
         left.forEach(function(t){ t.date = shiftKey(TODAY,1); });
-        checkBadges(); save(); w.remove(); render();
+        checkBadges(); save(); pageClose(w); render();
         toast(left.length ? left.length + " moved to tomorrow" : "Day closed.");
       };
     });
@@ -2071,7 +2095,7 @@ function openSettings(){
       state.name = w.querySelector("#sname").value.trim().slice(0,24);
       var a = w.querySelector("#sareas").value.split(",").map(function(s){ return s.trim(); }).filter(Boolean).slice(0,12);
       if(a.length) state.areas = a;
-      state.onboarded = true; save(); w.remove(); render(); toast("Saved.");
+      state.onboarded = true; save(); pageClose(w); render(); toast("Saved.");
     };
     w.querySelector("#backup").onclick = function(){
       try{ navigator.clipboard.writeText(JSON.stringify(state)).then(function(){ toast("Backup copied — paste it somewhere safe."); }, function(){ toast("Couldn't copy."); }); }catch(e){ toast("Couldn't copy."); }
@@ -2081,7 +2105,7 @@ function openSettings(){
         '<div class="sheetbtns"><button class="ghost" data-close="1">Cancel</button><button class="solid" id="rgo">Restore</button></div>',
         function(sw){ sw.querySelector("#rgo").onclick = function(){
           var raw = sw.querySelector("#rin").value.trim(); if(!raw) return;
-          try{ var p = JSON.parse(raw); Object.keys(state).forEach(function(k){ delete state[k]; }); Object.assign(state, p); migrate(); save(); sw.remove(); w.remove(); render(); toast("Restored."); }
+          try{ var p = JSON.parse(raw); Object.keys(state).forEach(function(k){ delete state[k]; }); Object.assign(state, p); migrate(); save(); sw.remove(); pageClose(w); render(); toast("Restored."); }
           catch(e){ toast("That doesn't look like a backup."); }
         }; });
     };
@@ -2105,7 +2129,7 @@ function openSettings(){
             if(!pack || !pack.state) throw 0;
             Object.keys(state).forEach(function(k){ delete state[k]; }); Object.assign(state, pack.state); migrate();
             (pack.shots||[]).forEach(function(r){ shotPut(r); });
-            save(); w.remove(); render(); toast("Restored with pictures.");
+            save(); pageClose(w); render(); toast("Restored with pictures.");
           }catch(e){ toast("That file isn't a Momentum backup."); }
           inp.remove();
         };
@@ -2310,7 +2334,8 @@ var recovering = false;
 window.addEventListener("error", function(){
   if(recovering) return; recovering = true;
   setTimeout(function(){ recovering = false; }, 4000);
-  try{ document.querySelectorAll(".page,.viewer,.scrim,.party").forEach(function(n){ n.remove(); }); render(); toast("Recovered — your data is safe."); }catch(e){}
+  try{ document.querySelectorAll(".page,.viewer,.scrim,.party").forEach(function(n){ n.remove(); });
+    pageStack = []; goalRepaint = null; syncChrome(); render(); toast("Recovered — your data is safe."); }catch(e){}
 });
 
 /* ================= BOOT ================= */
@@ -2333,6 +2358,10 @@ function boot(){
   render();
   shotsLoad().then(function(){ render(); });
   checkBadges(); save();
+  window.addEventListener("popstate", function(){
+    if(pageStack.length){ closeTopPage(); history.pushState({ p:1 }, ""); }
+  });
+  try{ history.pushState({ p:1 }, ""); }catch(e){}
   setInterval(rollover, 60000);
   document.addEventListener("visibilitychange", function(){ if(!document.hidden){ rollover(); render(); } });
   if("serviceWorker" in navigator){ try{ navigator.serviceWorker.register("sw.js"); }catch(e){} }
