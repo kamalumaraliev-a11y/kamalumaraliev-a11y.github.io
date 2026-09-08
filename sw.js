@@ -1,5 +1,5 @@
 /* Momentum service worker — keeps the app working with no signal. */
-const CACHE = "momentum-v34";
+const CACHE = "momentum-v35";
 const SHELL = [
   "./",
   "./index.html",

@@ -264,6 +264,10 @@
   .logrow .lm{flex:0 0 auto; color:var(--dim); font-size:16px; line-height:1; padding:0 3px}
   .pip{display:inline-block; width:8px; height:8px; border-radius:99px; margin-right:8px; vertical-align:1px}
   .pip.a{background:var(--amber)} .pip.m{background:var(--mint)} .pip.v{background:var(--violet)}
+  .obdots{display:flex; gap:6px; margin-bottom:12px}
+  .obdots i{width:22px; height:4px; border-radius:99px; background:var(--card-2)}
+  .obdots i.on{background:var(--amber)}
+  .btn.grow{flex:1}
   .kinddesc{font-size:12.5px; margin:-5px 2px 14px; color:var(--dim)}
   .kinddesc b{font-weight:700}
   .kinddesc.k-task b{color:var(--amber)} .kinddesc.k-habit b{color:var(--mint)} .kinddesc.k-goal b{color:var(--violet)}
@@ -427,7 +431,7 @@
 "use strict";
 
 /* ================= storage & migration ================= */
-var KEY = "momentum:v1", BUILD = "v34";
+var KEY = "momentum:v1", BUILD = "v35";
 var state = {
   v:2, name:"", accent:"amber", mode:"night", onboarded:false,
   tasks:[], habits:[], goals:[], projects:[], areas:["Health","Work","Money","Learning","Home","People"],
@@ -910,6 +914,11 @@ function viewHome(){
         : '<div class="card"><div class="when">The one thing</div><p style="margin-bottom:9px">If only one thing happens today, what should it be?</p><div class="qa"><input class="in" id="onein" placeholder="The one that matters" maxlength="120" enterkeyhint="done"><button class="btn hot" id="onebtn">Set</button></div></div>';
     }
     if(w === "tiles"){
+      if(backupDue()){
+        h += '<div class="card" style="border-color:rgba(240,178,107,.4)"><div class="when">🛟 Keep your data safe</div>' +
+          '<p style="margin-bottom:10px">Everything lives only in this browser — ' + (state.lastBackup ? "your last backup was " + dayTitle(state.lastBackup).toLowerCase() + "." : "and you\'ve never saved a backup.") + ' One tap fixes that.</p>' +
+          '<div class="btns"><button class="btn hot sm" id="backupnow">Save backup file</button><button class="btn ghost sm" id="backuplater">Remind me in a week</button></div></div>';
+      }
       var st = streakCount(), fm = focusMinutes(TODAY), open = openTasks().length, lt = lateTasks().length;
       h += '<div class="tiles">' +
         '<button class="tile a" data-go="tasks"><span class="tl">Open tasks</span><b>' + open + '</b><span class="ts">' + (lt ? lt + " overdue" : "nothing late") + '</span></button>' +
@@ -959,13 +968,64 @@ function viewHome(){
   h += '<div class="btns"><button class="btn wide warm" id="endday">Close out the day</button></div>';
   return h;
 }
+var obStep = 1, obDraft = { name:"", goal:"", habit:"" };
+var OB_GOALS = ["Get fit","Save money","Read more","Learn a skill","Sleep better","Ship a project"];
+var OB_HABITS = { "Get fit":["Work out 30 min","Walk 8k steps","Stretch 10 min"], "Save money":["No-spend day","Log every expense","Cook instead of order"],
+  "Read more":["Read 20 pages","Read before bed","Audiobook on commute"], "Learn a skill":["Practice 25 min","One lesson a day","Build something small"],
+  "Sleep better":["In bed by 11","No screens after 10","Morning light walk"], "Ship a project":["One focused hour","Write tomorrow's plan","Show someone progress"] };
 function onboardHTML(){
-  return '<div class="card grad" style="padding:22px 18px">' +
-    '<div class="when">First run</div><h2 style="font-size:24px">Right. Let\'s build some momentum.</h2>' +
-    '<p style="margin-bottom:12px">Momentum keeps your tasks, goals, habits, journal and focus time in one place — all stored on this device, nothing in the cloud.</p>' +
-    '<label class="fl"><span>What should I call you?</span><input class="in" id="namein" maxlength="24" placeholder="Your name" enterkeyhint="done"></label>' +
-    '<button class="btn hot wide" id="namebtn">Start</button>' +
-    '<p class="quiet" style="margin-top:6px">You can change everything later in Settings.</p></div>';
+  var dots = '<div class="obdots">' + [1,2,3].map(function(n){ return '<i class="' + (n<=obStep?"on":"") + '"></i>'; }).join("") + '</div>';
+  var inner = "";
+  if(obStep === 1){
+    inner = '<div class="when">1 of 3 · Welcome</div><h2 style="font-size:24px">Right. Let\'s build some momentum.</h2>' +
+      '<p style="margin-bottom:12px">Everything stays on this device — nothing goes to a cloud. Sixty seconds and you\'re running.</p>' +
+      '<label class="fl"><span>What should I call you?</span><input class="in" id="namein" maxlength="24" placeholder="Your name" enterkeyhint="done" value="' + esc(obDraft.name) + '"></label>' +
+      '<button class="btn hot wide" id="namebtn">Next ›</button>';
+  } else if(obStep === 2){
+    inner = '<div class="when v">2 of 3 · ◎ One goal</div><h2 style="font-size:22px">Name something worth chasing' + (obDraft.name ? ", " + esc(obDraft.name) : "") + '.</h2>' +
+      '<p style="margin-bottom:10px">A goal is the destination. Pick one or write your own — you can add more later.</p>' +
+      '<div class="chips" style="margin-bottom:10px">' + OB_GOALS.map(function(g){ return '<button class="chip" data-obgoal="' + esc(g) + '" aria-pressed="' + (obDraft.goal===g) + '">' + esc(g) + '</button>'; }).join("") + '</div>' +
+      '<label class="fl"><span>Your goal</span><input class="in" id="obg" maxlength="90" placeholder="Run a half marathon" enterkeyhint="done" value="' + esc(obDraft.goal) + '"></label>' +
+      '<div class="btns"><button class="btn ghost" id="obskipg">Skip for now</button><button class="btn hot grow" id="obgoalbtn">Next ›</button></div>';
+  } else {
+    var sug = OB_HABITS[obDraft.goal] || ["Read 20 pages","Move 30 min","Plan tomorrow tonight"];
+    inner = '<div class="when m">3 of 3 · ↻ One habit</div><h2 style="font-size:22px">Now one small thing you\'ll repeat.</h2>' +
+      '<p style="margin-bottom:10px">Habits are the engine — done daily, they carry the goal. Start with just one.</p>' +
+      '<div class="chips" style="margin-bottom:10px">' + sug.map(function(x){ return '<button class="chip" data-obhab="' + esc(x) + '" aria-pressed="' + (obDraft.habit===x) + '">' + esc(x) + '</button>'; }).join("") + '</div>' +
+      '<label class="fl"><span>Your daily habit</span><input class="in" id="obh" maxlength="80" placeholder="Read 20 pages" enterkeyhint="done" value="' + esc(obDraft.habit) + '"></label>' +
+      '<div class="btns"><button class="btn ghost" id="obskiph">Skip</button><button class="btn hot grow" id="obhabbtn">Start ›</button></div>';
+  }
+  return '<div class="card grad" style="padding:22px 18px">' + dots + inner +
+    '<p class="quiet" style="margin-top:10px">You can change everything later in Settings.</p></div>';
+}
+function backupFile(){
+  var pack = { state:state, shots:Object.keys(SHOTS).map(function(k){ return SHOTS[k]; }), build:BUILD };
+  try{
+    var blob = new Blob([JSON.stringify(pack)], { type:"application/json" });
+    var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "momentum-backup-" + TODAY + ".json";
+    document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    state.lastBackup = TODAY; save(); render();
+    toast("Backup saved. Keep it somewhere safe.");
+  }catch(e){ toast("Couldn't save the file."); }
+}
+function backupDue(){
+  var busy = state.habits.length + state.goals.length > 0 && Object.keys(state.history).length >= 5;
+  if(!busy) return false;
+  if(state.backupSnooze && TODAY < state.backupSnooze) return false;
+  if(!state.lastBackup) return true;
+  return daysBetween(state.lastBackup, TODAY) > 21;
+}
+function obFinish(){
+  state.name = obDraft.name.slice(0,24); state.onboarded = true;
+  if(obDraft.goal){
+    var g = { id:uid(), title:obDraft.goal.slice(0,90), why:"", target:0, unit:"", cur:0, due:"", area:"", miles:[], notes:[], shots:[], log:[], createdDay:TODAY };
+    state.goals.push(g);
+    if(obDraft.habit) state.habits.push({ id:uid(), title:obDraft.habit.slice(0,80), icon:"✦", days:null, log:{}, logAt:{}, goalId:g.id, createdDay:TODAY });
+  } else if(obDraft.habit){
+    state.habits.push({ id:uid(), title:obDraft.habit.slice(0,80), icon:"✦", days:null, log:{}, logAt:{}, goalId:"", createdDay:TODAY });
+  }
+  save(); render();
+  toast(obDraft.habit ? "You're set — tap the circle when it's done today." : "You're set. Tap + to add things.");
 }
 
 /* ================= TASKS ================= */
@@ -1800,9 +1860,66 @@ function viewStats(){
     [1,2,3,4,5,6,0].map(function(d){ var avg = dowN[d] ? dowStat[d]/dowN[d] : 0;
       return '<div class="col b"><i style="height:' + Math.max(3, Math.round(avg/dmax*100)) + '%"></i><span>' + ["S","M","T","W","T","F","S"][d] + '</span></div>'; }).join("") + '</div>' +
     '<p class="quiet mt">' + weekShapeNote(dowStat, dowN) + '</p></div>';
+  h += insightsHTML();
   h += badgesStrip();
   h += historyHTML();
   return h;
+}
+function insightsHTML(){
+  var live = state.habits.filter(function(x){ return !x.archived; });
+  var out = [];
+  // 1) keep-rate by weekday across all habits, last 8 weeks
+  var due = [0,0,0,0,0,0,0], hit = [0,0,0,0,0,0,0], k = shiftKey(TODAY,-55);
+  for(var i=0;i<56;i++){
+    var d = dow(k);
+    live.forEach(function(x){
+      if(x.createdDay && k < x.createdDay) return;
+      if(habitDueOn(x,k)){ due[d]++; if(x.log && x.log[k]) hit[d]++; }
+    });
+    k = shiftKey(k,1);
+  }
+  var tot = due.reduce(function(a,b){ return a+b; },0);
+  if(tot >= 21){
+    var names = ["Sundays","Mondays","Tuesdays","Wednesdays","Thursdays","Fridays","Saturdays"];
+    var rates = due.map(function(n,i){ return n >= 3 ? hit[i]/n : null; });
+    var bi = -1, wi = -1;
+    rates.forEach(function(r,i){ if(r===null) return; if(bi<0 || r > rates[bi]) bi = i; if(wi<0 || r < rates[wi]) wi = i; });
+    if(bi > -1 && wi > -1 && bi !== wi && rates[bi] - rates[wi] >= 0.2){
+      out.push('<div class="card"><div class="when m">Insight · your week</div><p><b>' + names[bi] + '</b> are your strongest day — you keep <b>' + Math.round(rates[bi]*100) + '%</b> of habits. <b>' + names[wi] + '</b> are where it slips (' + Math.round(rates[wi]*100) + '%). Plan the important reps accordingly.</p></div>');
+    }
+  }
+  // 2) strongest vs most fragile habit (30d)
+  var rated = live.map(function(x){
+    var d2 = 0, h2 = 0, kk = TODAY;
+    for(var j=0;j<30;j++){ if(!(x.createdDay && kk < x.createdDay) && habitDueOn(x,kk)){ d2++; if(x.log && x.log[kk]) h2++; } kk = shiftKey(kk,-1); }
+    return { x:x, due:d2, rate: d2 ? h2/d2 : 0 };
+  }).filter(function(r){ return r.due >= 10; });
+  if(rated.length >= 2){
+    rated.sort(function(a,b){ return b.rate - a.rate; });
+    var top = rated[0], low = rated[rated.length-1];
+    if(top.rate - low.rate >= 0.25){
+      out.push('<div class="card"><div class="when m">Insight · habits</div><p><b>' + esc(top.x.icon||"") + ' ' + esc(top.x.title) + '</b> is rock solid (' + Math.round(top.rate*100) + '% this month). <b>' + esc(low.x.icon||"") + ' ' + esc(low.x.title) + '</b> is the fragile one (' + Math.round(low.rate*100) + '%) — shrink it until it\'s too easy to skip.</p></div>');
+    }
+  }
+  // 3) journal effect on habits (last 30 days)
+  var jd = 0, jdue = 0, jhit = 0, nd = 0, ndue = 0, nhit = 0, kk3 = shiftKey(TODAY,-1);
+  for(var m=0;m<30;m++){
+    var journ = !!state.journal[kk3], dd = 0, hh = 0;
+    live.forEach(function(x){
+      if(x.createdDay && kk3 < x.createdDay) return;
+      if(habitDueOn(x,kk3)){ dd++; if(x.log && x.log[kk3]) hh++; }
+    });
+    if(dd){ if(journ){ jd++; jdue += dd; jhit += hh; } else { nd++; ndue += dd; nhit += hh; } }
+    kk3 = shiftKey(kk3,-1);
+  }
+  if(jd >= 5 && nd >= 5 && jdue && ndue){
+    var jr = jhit/jdue, nr = nhit/ndue;
+    if(Math.abs(jr - nr) >= 0.12){
+      out.push('<div class="card"><div class="when v">Insight · journal</div><p>On days you journal, you keep <b>' + Math.round(jr*100) + '%</b> of habits vs <b>' + Math.round(nr*100) + '%</b> on days you don\'t. ' + (jr > nr ? "The two feed each other — keep writing." : "Interesting — your quiet days are your strong days.") + '</p></div>');
+    }
+  }
+  if(!out.length) return '<div class="sec">' + head("Insights", "patterns in your data") + '<div class="card"><p class="quiet" style="margin:0">Keep logging — once there\'s a couple of weeks of history, patterns show up here: your strongest weekday, which habit is fragile, what the journal does to your follow-through.</p></div></div>';
+  return '<div class="sec">' + head("Insights", "patterns in your data") + out.join("") + '</div>';
 }
 function weekShapeNote(sum, n){
   var best = -1, bi = 1, worst = 1e9, wi = 1;
@@ -2222,7 +2339,7 @@ function openSettings(){
         return '<button class="chip" data-ds="' + hh + '" aria-pressed="' + ((state.dayStart||4)===hh) + '">' + (hh===0?"midnight":hh + "am") + '</button>'; }).join("") + '</div>' +
       '<div class="sh"><b>Life areas</b></div><p class="quiet" style="margin:0 0 8px">Used to group goals.</p>' +
       '<input class="in" id="sareas" value="' + esc(state.areas.join(", ")) + '">' +
-      '<div class="sh"><b>Backups</b><span class="sp"></span><span>this device only</span></div>' +
+      '<div class="sh"><b>Backups</b><span class="sp"></span><span>' + (state.lastBackup ? "last: " + dayTitle(state.lastBackup) : "never backed up") + '</span></div>' +
       '<p class="quiet" style="margin:0 0 10px">Everything lives in this browser. Text backup carries all your data; the file backup carries your pictures too.</p>' +
       '<button class="btn wide" id="backup">Copy a backup (text)</button>' +
       '<button class="btn wide" id="restore">Restore from text</button>' +
@@ -2242,7 +2359,7 @@ function openSettings(){
       state.onboarded = true; save(); pageClose(w); render(); toast("Saved.");
     };
     w.querySelector("#backup").onclick = function(){
-      try{ navigator.clipboard.writeText(JSON.stringify(state)).then(function(){ toast("Backup copied — paste it somewhere safe."); }, function(){ toast("Couldn't copy."); }); }catch(e){ toast("Couldn't copy."); }
+      try{ navigator.clipboard.writeText(JSON.stringify(state)).then(function(){ state.lastBackup = TODAY; save(); toast("Backup copied — paste it somewhere safe."); }, function(){ toast("Couldn't copy."); }); }catch(e){ toast("Couldn't copy."); }
     };
     w.querySelector("#restore").onclick = function(){
       sheetOpen('<h2>Restore from text</h2><p>Paste a backup. This replaces everything currently in the app.</p><textarea class="in" id="rin" style="min-height:120px"></textarea>' +
@@ -2253,15 +2370,7 @@ function openSettings(){
           catch(e){ toast("That doesn't look like a backup."); }
         }; });
     };
-    w.querySelector("#backupfile").onclick = function(){
-      var pack = { state:state, shots:Object.keys(SHOTS).map(function(k){ return SHOTS[k]; }), build:BUILD };
-      try{
-        var blob = new Blob([JSON.stringify(pack)], { type:"application/json" });
-        var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "momentum-backup-" + TODAY + ".json";
-        document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-        toast("Backup file saved.");
-      }catch(e){ toast("Couldn't save the file."); }
-    };
+    w.querySelector("#backupfile").onclick = function(){ backupFile(); };
     w.querySelector("#restorefile").onclick = function(){
       var inp = document.createElement("input"); inp.type = "file"; inp.accept = "application/json,.json"; inp.style.cssText = "position:fixed;left:-9999px";
       inp.onchange = function(){
@@ -2340,7 +2449,7 @@ document.addEventListener("click", function(e){
   var el = e.target.closest("[data-toggle],[data-more],[data-open],[data-hopen],[data-fold],[data-go],[data-tview],[data-tlen],[data-tpick]," +
     "[data-gopen],[data-gpage],[data-gopenpage],[data-garea],[data-glog],[data-addshot],[data-vopen],[data-panelmile],[data-day],[data-dp],[data-cm]," +
     "[data-note],[data-proj],[data-ibt],[data-ibx],[data-inbox],[data-tplrun],[data-tpldel],[data-tplopen]," +
-    "[role='tab'],#fab,#gear,#searchbtn,#qaddbtn,#qaddbtn2,#onebtn,#rethink,#namebtn,#endday,#copyday,#pullall,#tstart,#treset,#moredays," +
+    "[role='tab'],#fab,#gear,#searchbtn,#qaddbtn,#qaddbtn2,#onebtn,#rethink,#namebtn,#obgoalbtn,#obskipg,#obhabbtn,#obskiph,#backupnow,#backuplater,#endday,#copyday,#pullall,#tstart,#treset,#moredays,[data-obgoal],[data-obhab]," +
     "#visionbtn,#tfilter,#clearf,#newnote,#newproj,#newtpl,#jsave,#rsave2,#ibadd,#noteq,#moredays,#checkupd");
   if(!el) return;
   var d = el.dataset;
@@ -2409,7 +2518,15 @@ document.addEventListener("click", function(e){
   if(id === "newtpl"){ openTemplateEdit(null); return; }
   if(id === "onebtn"){ var oi = document.getElementById("onein"); var v = oi ? oi.value.trim() : ""; if(!v) return; state.oneThing[TODAY] = v.slice(0,120); save(); render(); return; }
   if(id === "rethink"){ delete state.oneThing[TODAY]; save(); render(); return; }
-  if(id === "namebtn"){ var ni = document.getElementById("namein"); state.name = (ni ? ni.value.trim() : "").slice(0,24); state.onboarded = true; save(); render(); return; }
+  if(el.dataset && el.dataset.obgoal != null){ obDraft.goal = el.dataset.obgoal; var gI = document.getElementById("obg"); if(gI) gI.value = obDraft.goal; document.querySelectorAll("[data-obgoal]").forEach(function(c){ c.setAttribute("aria-pressed", String(c === el)); }); return; }
+  if(el.dataset && el.dataset.obhab != null){ obDraft.habit = el.dataset.obhab; var hI = document.getElementById("obh"); if(hI) hI.value = obDraft.habit; document.querySelectorAll("[data-obhab]").forEach(function(c){ c.setAttribute("aria-pressed", String(c === el)); }); return; }
+  if(id === "namebtn"){ var ni = document.getElementById("namein"); obDraft.name = (ni ? ni.value.trim() : ""); obStep = 2; render(); return; }
+  if(id === "obgoalbtn"){ var gi = document.getElementById("obg"); obDraft.goal = (gi ? gi.value.trim() : obDraft.goal); obStep = 3; render(); return; }
+  if(id === "obskipg"){ obDraft.goal = ""; obStep = 3; render(); return; }
+  if(id === "obhabbtn"){ var hi = document.getElementById("obh"); obDraft.habit = (hi ? hi.value.trim() : obDraft.habit); obFinish(); return; }
+  if(id === "obskiph"){ obDraft.habit = ""; obFinish(); return; }
+  if(id === "backupnow"){ backupFile(); return; }
+  if(id === "backuplater"){ state.backupSnooze = shiftKey(TODAY, 7); save(); render(); toast("I'll ask again in a week."); return; }
   if(id === "endday"){ openRecap(); return; }
   if(id === "copyday"){ copyDay(); return; }
   if(id === "checkupd"){ toast("Checking\u2026"); checkUpdate(true); return; }
