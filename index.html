@@ -101,6 +101,8 @@
   .item .box svg{width:14px; height:14px; opacity:0; transition:.15s}
   .item.done{opacity:.55}
   .item.done .box{background:var(--mint); border-color:var(--mint)}
+  .item.habitem{border-left:3px solid var(--mint)}
+  .item.habitem .box{border-radius:50%}
   .item.done .box svg{opacity:1}
   .item.done .txt{text-decoration:line-through; text-decoration-color:rgba(234,237,246,.4)}
   .item .txt{flex:1; min-width:0; font-size:15px; line-height:1.35; overflow-wrap:anywhere}
@@ -171,6 +173,13 @@
   .hc{aspect-ratio:1; border-radius:4px; background:var(--card-2)}
   .hc.p{background:var(--amber-soft)} .hc.f{background:var(--amber)} .hc.t{outline:2px solid var(--soft); outline-offset:-1px}
   .hc.m{background:var(--mint)} .hc.ms{background:var(--mint-soft)}
+  .hc.tap{cursor:pointer}
+  .backrow{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; background:var(--card); border:1px solid var(--line); border-radius:13px; padding:12px}
+  .bday{display:flex; flex-direction:column; align-items:center; gap:2px; padding:7px 0 6px; border-radius:10px; border:1px solid var(--line); background:var(--card-2); color:var(--soft); cursor:pointer}
+  .bday i{font-style:normal; font-size:10px; color:var(--dim); text-transform:uppercase}
+  .bday b{font-size:14px; font-weight:700}
+  .bday.on{background:var(--mint-soft); border-color:var(--mint)} .bday.on b{color:var(--mint)}
+  .bday.dim{opacity:.5} .bday.t{outline:2px solid var(--soft); outline-offset:-1px}
   .chart{display:flex; align-items:flex-end; gap:5px; height:110px; background:var(--card); border:1px solid var(--line); border-radius:13px; padding:12px 12px 8px}
   .chart .col{flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; height:100%; justify-content:flex-end; min-width:0}
   .chart .col i{display:block; width:100%; max-width:22px; border-radius:5px 5px 2px 2px; background:var(--card-2); border:1px solid var(--line)}
@@ -251,6 +260,7 @@
   .logrow{display:flex; align-items:baseline; gap:9px; padding:7px 0; border-bottom:1px solid var(--line); font-size:13.5px}
   .logrow:last-child{border-bottom:none}
   .logrow em{font-style:normal; color:var(--mint)}
+  .logrow em.n{color:var(--amber)} .logrow em.r{filter:none}
   .logrow s{flex:1; text-decoration:none; color:var(--soft); overflow-wrap:anywhere}
   .logrow u{text-decoration:none; color:var(--dim); font-size:11.5px; white-space:nowrap}
   .dnote{font-size:13.5px; color:var(--text); font-style:italic; border-left:2px solid var(--amber); padding-left:10px; margin:10px 0 2px}
@@ -407,7 +417,7 @@
 "use strict";
 
 /* ================= storage & migration ================= */
-var KEY = "momentum:v1", BUILD = "v32";
+var KEY = "momentum:v1", BUILD = "v33";
 var state = {
   v:2, name:"", accent:"amber", mode:"night", onboarded:false,
   tasks:[], habits:[], goals:[], projects:[], areas:["Health","Work","Money","Learning","Home","People"],
@@ -524,7 +534,7 @@ function itemHTML(o){
 }
 function habitItemHTML(x){
   var done = !!(x.log && x.log[TODAY]), run = habitRun(x);
-  return '<div class="item' + (done?" done":"") + '">' +
+  return '<div class="item habitem' + (done?" done":"") + '">' +
     '<button class="box" data-toggle="' + x.id + '" data-kind="habit" aria-label="Mark done">' + CHECK + '</button>' +
     '<div class="txt" data-hopen="' + x.id + '" style="cursor:pointer">' + esc(x.icon||"✦") + ' ' + esc(x.title) +
       '<span class="meta">' + (habitDaysLabel(x) || "every day") + (run > 1 ? ' · ' + run + ' in a row' : '') + (x.goalId && goalName(x.goalId) ? ' · <span class="gl">◎ ' + esc(goalName(x.goalId)) + '</span>' : '') + '</span></div>' +
@@ -549,6 +559,18 @@ function toggle(id, kind){
 }
 
 /* ================= domain: habits ================= */
+function habitFlip(id, k){
+  var x = byId(state.habits, id); if(!x || !k) return;
+  if(k > TODAY){ toast("Can't log the future — yet."); return; }
+  x.log = x.log || {}; x.logAt = x.logAt || {};
+  if(x.log[k]){ delete x.log[k]; delete x.logAt[k]; toast("Unmarked " + dayTitle(k) + "."); }
+  else {
+    x.log[k] = 1; x.logAt[k] = Date.now();
+    if(x.createdDay && k < x.createdDay) x.createdDay = k;
+    toast(k === TODAY ? cheer() : "Logged for " + dayTitle(k) + ".");
+  }
+  checkBadges(); save(); render();
+}
 function habitDueOn(x, k){ if(!x.days || !x.days.length) return true; return x.days.indexOf(dow(k)) > -1; }
 function habitsDueToday(){ return state.habits.filter(function(x){ return !x.archived && habitDueOn(x, TODAY) && !(x.createdDay && x.createdDay > TODAY); }); }
 function habitDaysLabel(x){
@@ -1219,7 +1241,7 @@ function openGoal(goalId){
               (t.date && t.date < TODAY ? ' · <span class="late">overdue</span>' : "") });
           }).join("")
           : '<div class="empty">No open tasks for this goal.</div>') + '</div>';
-      if(st.habits.length) h += '<div class="sec">' + head("Habits feeding this", String(st.habits.length)) + st.habits.map(habitItemHTML).join("") + '</div>';
+      if(st.habits.length) h += '<div class="sec">' + head("Habits feeding this", st.habits.length + " · repeat daily, live in the Habits tab") + st.habits.map(habitItemHTML).join("") + '</div>';
     } else if(tabG === "track"){
       h += '<div class="stats">' +
         statBox("Days in", st.since === null ? "—" : st.since, "since you set it") +
@@ -1247,14 +1269,14 @@ function openGoal(goalId){
         (g.notes||[]).slice(-6).reverse().map(function(n){ return '<p class="dnote">' + esc(n.t) + ' <span class="dtime">· ' + dayTitle(n.d) + '</span></p>'; }).join("") + '</div>';
     } else {
       var rows = st.done.map(function(t){ return { title:t.title, day:t.doneDay, at:t.doneAt||0, rep:false }; });
-      st.habits.forEach(function(x){ Object.keys(x.log||{}).forEach(function(k){ if(x.log[k]) rows.push({ title:x.title, day:k, at:(x.logAt||{})[k]||0, rep:true }); }); });
+      st.habits.forEach(function(x){ Object.keys(x.log||{}).forEach(function(k){ if(x.log[k]) rows.push({ title:x.title, day:k, at:(x.logAt||{})[k]||0, rep:true, ic:x.icon||"" }); }); });
       (g.log||[]).forEach(function(l){ rows.push({ title:"Logged " + nfmt(l.v) + (g.unit?" "+esc(g.unit):""), day:l.d, at:l.at||0, num:true }); });
       (g.miles||[]).filter(function(m){ return m.done; }).forEach(function(m){ rows.push({ title:"Milestone: " + m.t, day:m.d || g.createdDay || "", at:0, mile:true }); });
       rows.sort(function(a,b){ if(a.day !== b.day) return (a.day||"") < (b.day||"") ? 1 : -1; return (b.at||0)-(a.at||0); });
       var lim = showAll ? rows.length : 15;
       h += '<div class="sec">' + head("Everything you've done", String(rows.length)) +
         (rows.length ? '<div class="log">' + rows.slice(0,lim).map(function(r){
-          return '<div class="logrow"><em>' + (r.mile?"🚩":r.num?"▲":"✓") + '</em><s>' + esc(r.title) + '</s><u>' + (r.day?dayTitle(r.day):"") + '</u></div>'; }).join("") + '</div>' +
+          return '<div class="logrow"><em class="' + (r.num?"n":r.rep?"r":"") + '">' + (r.mile?"🚩":r.num?"▲":r.rep?(r.ic?esc(r.ic):"↻"):"✓") + '</em><s>' + esc(r.title) + '</s><u>' + (r.day?dayTitle(r.day):"") + (r.mile?"":r.num?" · number":r.rep?" · habit":" · task") + '</u></div>'; }).join("") + '</div>' +
           (rows.length > lim ? '<button class="btn wide sm" data-gmore="1">Show all ' + rows.length + '</button>' : '')
         : '<div class="empty">Nothing logged for this yet.</div>') + '</div>';
       if(ids.length) h += '<div class="sec">' + head("Pictures", String(ids.length)) + '<div class="pics">' +
@@ -1350,20 +1372,26 @@ function openLog(goalId){
     (g.target>0 ? '<p>Last logged ' + nfmt(g.cur||0) + (g.unit?" "+esc(g.unit):"") + '. Target is ' + nfmt(g.target) + '.</p>' : '<p>Give this goal a number to chase and you get a progress line and a projected finish date.</p>') +
     (g.target>0 ? '<label class="fl"><span>Current' + (g.unit ? " (" + esc(g.unit) + ")" : "") + '</span><input class="in" type="number" id="lv" step="any" inputmode="decimal" value="' + (g.cur||0) + '"></label>'
       : '<div class="grid2"><label class="fl"><span>Target</span><input class="in" type="number" id="lt" step="any"></label><label class="fl"><span>Unit</span><input class="in" id="lu" maxlength="16" placeholder="kg, $, pages"></label></div><label class="fl"><span>Where you are now</span><input class="in" type="number" id="lv" step="any" value="0"></label>') +
+    '<label class="fl"><span>When was this?</span><input class="in" type="date" id="ld" value="' + TODAY + '" max="' + TODAY + '"></label>' +
+    '<p class="quiet" style="margin:-4px 0 10px">Leave it on today, or pick a past day to fill in old numbers.</p>' +
     '<div class="sheetbtns"><button class="ghost" data-close="1">Cancel</button><button class="solid" id="lsave">Save</button></div>',
     function(w){
       w.querySelector("#lsave").onclick = function(){
+        var ldEl = w.querySelector("#ld"), dk = (ldEl && ldEl.value) || TODAY;
+        if(dk > TODAY) dk = TODAY;
         if(g.target > 0){
           var v = +w.querySelector("#lv").value;
           if(isNaN(v)) return;
-          g.cur = v; g.log = g.log||[]; g.log.push({ d:TODAY, v:v, at:Date.now() });
+          g.log = g.log||[]; g.log.push({ d:dk, v:v, at:Date.now() });
         } else {
           var t = +w.querySelector("#lt").value; if(!t){ w.querySelector("#lt").focus(); return; }
           g.target = t; g.unit = w.querySelector("#lu").value.trim().slice(0,16);
-          g.cur = +w.querySelector("#lv").value || 0; g.log = g.log||[]; g.log.push({ d:TODAY, v:g.cur, at:Date.now() });
+          g.log = g.log||[]; g.log.push({ d:dk, v:(+w.querySelector("#lv").value || 0), at:Date.now() });
         }
+        g.log.sort(function(a,b){ return a.d === b.d ? (a.at||0)-(b.at||0) : (a.d < b.d ? -1 : 1); });
+        g.cur = +g.log[g.log.length-1].v;
         checkBadges(); save(); pageClose(w); render(); if(goalRepaint) goalRepaint();
-        toast(goalPct(g) >= 100 ? "🏆 Target reached!" : "Logged.");
+        toast(goalPct(g) >= 100 ? "🏆 Target reached!" : (dk === TODAY ? "Logged." : "Logged for " + dayTitle(dk) + "."));
         if(goalPct(g) >= 100){ var p = document.createElement("div"); p.innerHTML = partyHTML(); document.body.appendChild(p.firstChild); setTimeout(function(){ document.querySelectorAll(".party").forEach(function(n){ n.remove(); }); }, 3600); }
       };
     });
@@ -1474,7 +1502,13 @@ function openHabitStats(id){
     x = byId(state.habits, id); if(!x){ pageClose(w); return; }
     var run = habitRun(x), best = habitBest(x), total = Object.keys(x.log||{}).length;
     var hm = "", k = shiftKey(TODAY,-139);
-    for(var i=0;i<140;i++){ hm += '<span class="hc' + (x.log && x.log[k] ? " m" : habitDueOn(x,k) ? "" : " ms") + (k===TODAY?" t":"") + '"></span>'; k = shiftKey(k,1); }
+    for(var i=0;i<140;i++){ hm += '<span class="hc tap' + (x.log && x.log[k] ? " m" : habitDueOn(x,k) ? "" : " ms") + (k===TODAY?" t":"") + '" data-hk="' + k + '" title="' + dayTitle(k) + '"></span>'; k = shiftKey(k,1); }
+    var back = "", bk = shiftKey(TODAY,-13), DN = ["S","M","T","W","T","F","S"];
+    for(var b=0;b<14;b++){
+      var don = !!(x.log && x.log[bk]);
+      back += '<button class="bday' + (don?" on":"") + (habitDueOn(x,bk)?"":" dim") + (bk===TODAY?" t":"") + '" data-hk="' + bk + '" aria-pressed="' + don + '"><i>' + DN[dow(bk)] + '</i><b>' + (+bk.slice(8)) + '</b></button>';
+      bk = shiftKey(bk,1);
+    }
     var mo = [], mk = shiftKey(TODAY,-5*30);
     for(var m=0;m<6;m++){ var c = 0, kk = mk; for(var dd=0;dd<30;dd++){ if(x.log && x.log[kk]) c++; kk = shiftKey(kk,1); } mo.push({ l:new Date(mk+"T12:00:00").toLocaleDateString(undefined,{month:"short"}), v:c }); mk = shiftKey(mk,30); }
     var mx = Math.max(1, Math.max.apply(null, mo.map(function(o){ return o.v; })));
@@ -1484,14 +1518,31 @@ function openHabitStats(id){
       '<p class="pwhy">' + (habitDaysLabel(x)||"every day") + (x.goalId && goalName(x.goalId) ? ' · feeds ◎ ' + esc(goalName(x.goalId)) : '') + '</p>' +
       '<div class="stats">' + statBox("Current run", run, run===1?"day":"days", true) + statBox("Best run", best, "days") +
         statBox("Total kept", total, "times") + statBox("Last 30 days", habitRate(x,30) + "%", "of days due") + '</div>' +
-      '<div class="sec">' + head("Last 20 weeks", "") + '<div class="heat">' + hm + '</div></div>' +
+      '<div class="sec">' + head("Fill in past days", "tap to mark or unmark") + '<div class="backrow">' + back + '</div>' +
+        '<div class="btns" style="margin-top:8px"><button class="btn sm" data-hpick="1">Log an older day…</button></div></div>' +
+      '<div class="sec">' + head("Last 20 weeks", "tap any square to flip it") + '<div class="heat">' + hm + '</div></div>' +
       '<div class="sec">' + head("By month", "times kept") + '<div class="chart">' + mo.map(function(o){
         return '<div class="col m"><i style="height:' + Math.max(3, Math.round(o.v/mx*100)) + '%"></i><span>' + o.l + '</span></div>'; }).join("") + '</div></div>' +
       '<div class="btns"><button class="btn wide" data-harch="1">' + (x.archived?"Bring it back":"Pause this habit") + '</button></div></div>';
   }
   w.addEventListener("click", function(ev){
-    var b = ev.target.closest("[data-back],[data-hedit],[data-hdel],[data-harch]"); if(!b) return;
+    var b = ev.target.closest("[data-back],[data-hedit],[data-hdel],[data-harch],[data-hk],[data-hpick]"); if(!b) return;
     var d = b.dataset;
+    if(d.hk){ habitFlip(id, d.hk); paint(); return; }
+    if(d.hpick != null){
+      sheetOpen('<h2>Log an older day</h2><p>Pick any day you did this but never marked. Days or weeks back — all fine.</p>' +
+        '<label class="fl"><span>Which day?</span><input class="in" type="date" id="hbd" value="' + shiftKey(TODAY,-14) + '" max="' + TODAY + '"></label>' +
+        '<div class="sheetbtns"><button class="ghost" data-close="1">Cancel</button><button class="solid" id="hbsave">Mark done</button></div>',
+        function(sw){
+          sw.querySelector("#hbsave").onclick = function(){
+            var v = sw.querySelector("#hbd").value;
+            if(!v || v > TODAY){ sw.querySelector("#hbd").focus(); return; }
+            if(!(x.log && x.log[v])) habitFlip(id, v); else toast("Already marked for " + dayTitle(v) + ".");
+            pageClose(sw); paint();
+          };
+        });
+      return;
+    }
     if(d.back != null){ pageClose(w); render(); return; }
     if(d.hedit != null) return openHabitEdit(id, paint);
     if(d.harch != null){ x.archived = !x.archived; save(); paint(); render(); return; }
