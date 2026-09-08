@@ -24,10 +24,27 @@
     --display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;
     --body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     --r:16px; --r-s:11px; --r-l:22px;
+    --shadow:rgba(0,0,0,.22); --edge:rgba(255,255,255,.045); --glass:rgba(16,20,32,.82); --glassline:rgba(255,255,255,.07);
     --sat:env(safe-area-inset-top); --sab:env(safe-area-inset-bottom);
   }
   html[data-mode="dim"]{ --ink:#171B27; --ink-2:#121520; --card:#202637; --card-2:#2A3145; --card-3:#333B52; --line:#353E58; --line-2:#414B69 }
   html[data-mode="midnight"]{ --ink:#07090F; --ink-2:#04050A; --card:#0F131D; --card-2:#171C29; --card-3:#1F2535; --line:#1F2637; --line-2:#2A3246 }
+  html[data-theme="day"]{
+    --ink:#F5F1E8; --ink-2:#FFFDF8; --card:#FFFFFF; --card-2:#F8F5EE; --card-3:#F0EBDF; --line:#E6DFD0; --line-2:#D8D0BE;
+    --text:#20242F; --soft:#3C4254; --dim:#767C90; --mute:#A6ACBC;
+    --amber:#D97F1F; --amber-soft:rgba(217,127,31,.12); --amber-line:rgba(217,127,31,.35); --on-amber:#FFF9F0;
+    --mint:#0F9D68; --mint-soft:rgba(15,157,104,.12); --blue:#3D62D6; --blue-soft:rgba(61,98,214,.10);
+    --violet:#7452CE; --violet-soft:rgba(116,82,206,.10); --red:#CE5050; --red-soft:rgba(206,80,80,.10);
+    --p1:#CE5050; --p2:#D97F1F; --p3:#3D62D6;
+    --shadow:rgba(74,60,26,.10); --edge:rgba(255,255,255,.85); --glass:rgba(255,255,255,.85); --glassline:rgba(74,60,26,.12)
+  }
+  html[data-theme="day"] body{background:
+    radial-gradient(120% 60% at 15% -5%, rgba(217,127,31,.09), transparent 55%),
+    radial-gradient(100% 55% at 110% 15%, rgba(116,82,206,.06), transparent 55%),
+    var(--ink)}
+  html[data-theme="day"] .scrim{background:rgba(46,38,20,.42)}
+  html[data-theme="day"] .in{box-shadow:inset 0 2px 5px rgba(74,60,26,.07)}
+  html[data-theme="day"] .gposter .init{color:rgba(32,36,47,.14)}
 
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   html{margin:0; padding:0; width:100%; overflow-x:hidden; background:var(--ink); -webkit-text-size-adjust:100%}
@@ -73,7 +90,7 @@
 
   /* ---------- cards ---------- */
   .card{background:linear-gradient(180deg, var(--card-2), var(--card) 42%); border:1px solid var(--line); border-radius:var(--r); padding:16px 18px; margin-bottom:14px;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 10px 26px rgba(0,0,0,.24)}
+    box-shadow:inset 0 1px 0 var(--edge), 0 10px 26px var(--shadow)}
   .card.grad{background:linear-gradient(165deg,var(--card-2),var(--card))}
   .card.flat{padding:0; overflow:hidden}
   .card h2{font-size:18px; margin-bottom:6px}
@@ -104,12 +121,12 @@
   .fold .hb{font-size:12.5px; color:var(--amber); padding:8px 6px; flex:0 0 auto; white-space:nowrap; font-weight:600}
 
   /* ---------- items ---------- */
-  .item{display:flex; align-items:center; gap:12px; background:linear-gradient(180deg, rgba(255,255,255,.022), transparent 55%), var(--card); border:1px solid var(--line); border-radius:14px; padding:13px 14px; margin-bottom:10px; position:relative;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 6px 16px rgba(0,0,0,.16)}
+  .item{display:flex; align-items:center; gap:12px; background:linear-gradient(180deg, var(--card-2), var(--card) 60%); border:1px solid var(--line); border-radius:14px; padding:13px 14px; margin-bottom:10px; position:relative;
+    box-shadow:inset 0 1px 0 var(--edge), 0 6px 16px var(--shadow)}
   .item .box{width:26px; height:26px; border-radius:9px; border:1.7px solid var(--dim); flex:0 0 auto; display:flex; align-items:center; justify-content:center; transition:.15s; background:none}
   .item .box svg{width:14px; height:14px; opacity:0; transition:.15s}
   .item.done{opacity:.55}
-  .item.done .box{background:linear-gradient(140deg, #6FD9B1, #45B98C); border-color:transparent; box-shadow:0 3px 12px rgba(90,199,158,.3); animation:pop .3s cubic-bezier(.3,1.6,.5,1)}
+  .item.done .box{background:linear-gradient(140deg, color-mix(in srgb, var(--mint) 74%, #fff), var(--mint)); border-color:transparent; box-shadow:0 3px 14px color-mix(in srgb, var(--mint) 40%, transparent); animation:pop .42s cubic-bezier(.34,1.85,.4,1)}
   .item.habitem{border-left:3px solid var(--mint)}
   .item.habitem .box{border-radius:50%}
   .item.done .box svg{opacity:1}
@@ -139,7 +156,7 @@
   .seg button{flex:1; padding:8px 4px; border-radius:9px; font-size:13.5px; color:var(--dim); font-weight:600}
   .seg button[aria-pressed="true"]{background:var(--card-2); color:var(--text)}
   .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; border:1px solid var(--line); background:var(--card); color:var(--soft); border-radius:12px; padding:10px 14px; font-size:14px; font-weight:600}
-  .btn.hot{background:linear-gradient(135deg, #F6C57F, #EE9D55); border-color:transparent; color:var(--on-amber); box-shadow:0 4px 16px rgba(240,178,107,.30), inset 0 1px 0 rgba(255,255,255,.35)}
+  .btn.hot{background:linear-gradient(135deg, color-mix(in srgb, var(--amber) 74%, #fff), var(--amber)); border-color:transparent; color:var(--on-amber); box-shadow:0 4px 16px color-mix(in srgb, var(--amber) 32%, transparent), inset 0 1px 0 rgba(255,255,255,.35)}
   .btn.hot:active{transform:translateY(1px)}
   .btn.warm{background:var(--amber-soft); border-color:var(--amber-line); color:var(--amber)}
   .btn.danger{color:var(--red); border-color:rgba(232,140,140,.4)}
@@ -167,10 +184,10 @@
 
   /* ---------- rings / bars / stats ---------- */
   .ring{position:relative; flex:0 0 auto}
-  .ring svg{transform:rotate(-90deg); display:block; filter:drop-shadow(0 0 6px rgba(240,178,107,.25))}
+  .ring svg{transform:rotate(-90deg); display:block; filter:drop-shadow(0 0 6px color-mix(in srgb, var(--amber) 26%, transparent))}
   .ring .rv{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--display); font-weight:700}
   .bar{display:block; height:6px; border-radius:99px; background:var(--card-2); overflow:hidden}
-  .bar i{display:block; height:100%; border-radius:99px; background:linear-gradient(90deg, #EE9D55, #F6C57F); box-shadow:0 0 8px rgba(240,178,107,.35); transition:width .3s}
+  .bar i{display:block; height:100%; border-radius:99px; background:linear-gradient(90deg, var(--amber), color-mix(in srgb, var(--amber) 74%, #fff)); box-shadow:0 0 8px color-mix(in srgb, var(--amber) 36%, transparent); transition:width .3s}
   .bar.m i{background:var(--mint)} .bar.b i{background:var(--blue)} .bar.v i{background:var(--violet)}
   .stats{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px}
   .stats.three{grid-template-columns:1fr 1fr 1fr}
@@ -219,7 +236,7 @@
   .dq{font-family:var(--display); font-size:17px; line-height:1.4; font-weight:500; color:var(--soft)}
   .dq small{display:block; font-family:var(--body); font-size:12px; color:var(--dim); margin-top:7px}
   .tiles{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px}
-  .tile{background:linear-gradient(180deg, rgba(255,255,255,.025), transparent 50%), var(--card); border:1px solid var(--line); border-radius:var(--r); padding:14px; text-align:left; min-height:96px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 6px 16px rgba(0,0,0,.16)}
+  .tile{background:linear-gradient(180deg, var(--card-2), var(--card) 60%); border:1px solid var(--line); border-radius:var(--r); padding:14px; text-align:left; min-height:96px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:inset 0 1px 0 var(--edge), 0 6px 16px var(--shadow)}
   .tile.a{background:linear-gradient(155deg, rgba(240,178,107,.14), rgba(240,178,107,.03) 60%), var(--card); border-color:rgba(240,178,107,.22)}
   .tile.m{background:linear-gradient(155deg, rgba(90,199,158,.14), rgba(90,199,158,.03) 60%), var(--card); border-color:rgba(90,199,158,.22)}
   .tile.b{background:linear-gradient(155deg, rgba(140,162,232,.14), rgba(140,162,232,.03) 60%), var(--card); border-color:rgba(140,162,232,.22)}
@@ -289,16 +306,16 @@
   .kinddesc.k-note b{color:var(--blue)} .kinddesc.k-project b{color:var(--violet)}
   .dnote{display:flex; align-items:baseline; gap:8px}
   .dnote .grow2{flex:1} .dnote .nx{color:var(--dim); font-size:15px; padding:0 4px; flex:0 0 auto}
-  .item.habitem .box{border-color:rgba(90,199,158,.55)}
+  .item.habitem .box{border-color:color-mix(in srgb, var(--mint) 55%, transparent)}
   .logrow s{flex:1; text-decoration:none; color:var(--soft); overflow-wrap:anywhere}
   .logrow u{text-decoration:none; color:var(--dim); font-size:11.5px; white-space:nowrap}
   .dnote{font-size:13.5px; color:var(--text); font-style:italic; border-left:2px solid var(--amber); padding-left:10px; margin:10px 0 2px}
   .dtime{color:var(--dim); font-size:11.5px; font-style:normal}
 
   /* ---------- habits ---------- */
-  .hrow{display:flex; align-items:center; gap:12px; background:linear-gradient(180deg, rgba(255,255,255,.022), transparent 55%), var(--card); border:1px solid var(--line); border-radius:16px; padding:15px 14px; margin-bottom:11px;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 6px 16px rgba(0,0,0,.16); transition:border-color .2s}
-  .hrow.done{border-color:rgba(90,199,158,.35); box-shadow:inset 0 1px 0 rgba(255,255,255,.04), 0 6px 20px rgba(90,199,158,.10)}
+  .hrow{display:flex; align-items:center; gap:12px; background:linear-gradient(180deg, var(--card-2), var(--card) 60%); border:1px solid var(--line); border-radius:16px; padding:15px 14px; margin-bottom:11px;
+    box-shadow:inset 0 1px 0 var(--edge), 0 6px 16px var(--shadow); transition:border-color .2s}
+  .hrow.done{border-color:color-mix(in srgb, var(--mint) 40%, transparent); box-shadow:inset 0 1px 0 var(--edge), 0 6px 20px color-mix(in srgb, var(--mint) 14%, transparent)}
   .hrow .hic{width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; background:var(--card-2); flex:0 0 auto}
   .hrow .hm{flex:1; min-width:0}
   .hrow .hm b{display:block; font-size:15px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -306,11 +323,11 @@
   .hrow .wk{display:flex; gap:4px; margin-top:9px}
   .hrow .wk i{width:13px; height:13px; border-radius:4px; background:var(--card-2)}
   .hrow .wk i.on{background:var(--mint)} .hrow .wk i.off{opacity:.3} .hrow .wk i.t{outline:1.5px solid var(--soft); outline-offset:-1px}
-  .hrow .hbtn{width:42px; height:42px; border-radius:50%; border:1.7px solid rgba(90,199,158,.55); display:flex; align-items:center; justify-content:center; flex:0 0 auto}
+  .hrow .hbtn{width:42px; height:42px; border-radius:50%; border:1.7px solid color-mix(in srgb, var(--mint) 55%, transparent); display:flex; align-items:center; justify-content:center; flex:0 0 auto}
   .hrow .hbtn svg{width:16px; height:16px; opacity:0}
-  .hrow.done .hbtn{background:linear-gradient(140deg, #6FD9B1, #45B98C); border-color:transparent; box-shadow:0 4px 16px rgba(90,199,158,.35), inset 0 1px 0 rgba(255,255,255,.3); animation:pop .3s cubic-bezier(.3,1.6,.5,1)} .hrow.done .hbtn svg{opacity:1}
-  @keyframes pop{0%{transform:scale(.7)}100%{transform:scale(1)}}
-  .hrow.done{border-color:rgba(90,199,158,.35)}
+  .hrow.done .hbtn{background:linear-gradient(140deg, color-mix(in srgb, var(--mint) 74%, #fff), var(--mint)); border-color:transparent; box-shadow:0 4px 18px color-mix(in srgb, var(--mint) 45%, transparent), inset 0 1px 0 rgba(255,255,255,.3); animation:pop .42s cubic-bezier(.34,1.85,.4,1)} .hrow.done .hbtn svg{opacity:1; stroke:#fff}
+  @keyframes pop{0%{transform:scale(.5) rotate(-14deg)}55%{transform:scale(1.16) rotate(4deg)}100%{transform:scale(1) rotate(0)}}
+  .hrow.done{border-color:color-mix(in srgb, var(--mint) 40%, transparent)}
   .emojirow{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px}
   .emojirow button{width:44px; height:44px; border-radius:12px; background:var(--ink); border:1px solid var(--line); font-size:22px}
   .emojirow button[aria-pressed="true"]{background:var(--amber-soft); border-color:var(--amber)}
@@ -380,7 +397,7 @@
 
   /* ---------- pages / sheets / overlays ---------- */
   .page{position:relative; z-index:1; background:var(--ink); min-height:100dvh; padding-bottom:calc(30px + var(--sab))}
-  .pbar{position:sticky; top:0; z-index:6; display:flex; align-items:center; gap:8px; background:rgba(18,21,31,.92); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); padding:calc(10px + var(--sat)) 14px 10px; border-bottom:1px solid var(--line)}
+  .pbar{position:sticky; top:0; z-index:6; display:flex; align-items:center; gap:8px; background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); padding:calc(10px + var(--sat)) 14px 10px; border-bottom:1px solid var(--line)}
   .pbar .back{font-size:16.5px; color:var(--amber); font-weight:600; padding:10px 14px 10px 6px; margin:-8px 0}
   .pbar .sp{flex:1}
   .pwrap{max-width:640px; margin:0 auto; padding:16px 16px 60px}
@@ -408,7 +425,7 @@
   .vnav.l{left:10px} .vnav.r{right:10px}
   .vmeta{max-width:640px; margin:0 auto; width:100%}
   .vmeta h3{font-size:18px; margin-bottom:4px} .vmeta p{font-size:13.5px; color:var(--soft); margin:0 0 8px}
-  .toast{position:fixed; left:50%; bottom:calc(104px + var(--sab)); transform:translateX(-50%); background:rgba(30,36,54,.92); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid rgba(255,255,255,.09); color:var(--text); padding:10px 16px; border-radius:12px; font-size:14px; z-index:80; max-width:90vw; box-shadow:0 8px 30px rgba(0,0,0,.4); animation:up .2s ease; display:flex; align-items:center; gap:12px}
+  .toast{position:fixed; left:50%; bottom:calc(104px + var(--sab)); transform:translateX(-50%); background:var(--glass); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid var(--glassline); color:var(--text); color:var(--text); padding:10px 16px; border-radius:12px; font-size:14px; z-index:80; max-width:90vw; box-shadow:0 8px 30px rgba(0,0,0,.4); animation:up .2s ease; display:flex; align-items:center; gap:12px}
   .toast button{color:var(--amber); font-weight:700}
   .party{position:fixed; inset:0; z-index:75; pointer-events:none; overflow:hidden}
   .party i{position:absolute; top:-20px; width:9px; height:14px; border-radius:2px; animation:pfall linear forwards}
@@ -416,13 +433,13 @@
 
   /* ---------- nav + fab ---------- */
   .navwrap{position:fixed; left:0; right:0; bottom:0; z-index:30; pointer-events:none; padding:0 14px calc(10px + var(--sab))}
-  .nav{pointer-events:auto; max-width:640px; margin:0 auto; display:flex; background:rgba(16,20,32,.82); backdrop-filter:blur(22px) saturate(1.3); -webkit-backdrop-filter:blur(22px) saturate(1.3); border:1px solid rgba(255,255,255,.07); border-radius:24px; padding:7px; box-shadow:0 16px 50px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05)}
+  .nav{pointer-events:auto; max-width:640px; margin:0 auto; display:flex; background:var(--glass); backdrop-filter:blur(22px) saturate(1.3); -webkit-backdrop-filter:blur(22px) saturate(1.3); border:1px solid var(--glassline); border-radius:24px; padding:7px; box-shadow:0 16px 50px var(--shadow), inset 0 1px 0 var(--edge)}
   .nav button{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 2px; border-radius:14px; font-size:10.5px; color:var(--dim); font-weight:600}
   .nav button svg{width:22px; height:22px}
   .nav button{transition:color .15s}
-  .nav button[aria-selected="true"]{background:linear-gradient(180deg, rgba(240,178,107,.22), rgba(240,178,107,.10)); color:var(--amber); box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 4px 14px rgba(240,178,107,.12)}
-  .fab{position:fixed; right:16px; bottom:calc(94px + var(--sab)); z-index:31; width:58px; height:58px; border-radius:50%; background:linear-gradient(140deg, #F6C57F, #ED954B); color:var(--on-amber); font-size:30px; line-height:1;
-    box-shadow:0 12px 34px rgba(240,178,107,.42), inset 0 1.5px 0 rgba(255,255,255,.4); display:flex; align-items:center; justify-content:center; font-weight:400; transition:transform .15s}
+  .nav button[aria-selected="true"]{background:linear-gradient(180deg, color-mix(in srgb, var(--amber) 22%, transparent), color-mix(in srgb, var(--amber) 10%, transparent)); color:var(--amber); box-shadow:inset 0 1px 0 var(--edge), 0 4px 14px color-mix(in srgb, var(--amber) 14%, transparent)}
+  .fab{position:fixed; right:16px; bottom:calc(94px + var(--sab)); z-index:31; width:58px; height:58px; border-radius:50%; background:linear-gradient(140deg, color-mix(in srgb, var(--amber) 74%, #fff), color-mix(in srgb, var(--amber) 94%, #000)); color:var(--on-amber); font-size:30px; line-height:1;
+    box-shadow:0 12px 34px color-mix(in srgb, var(--amber) 44%, transparent), inset 0 1.5px 0 rgba(255,255,255,.4); display:flex; align-items:center; justify-content:center; font-weight:400; transition:transform .15s}
   .fab:active{transform:scale(.95)}
 </style>
 </head>
@@ -451,9 +468,9 @@
 "use strict";
 
 /* ================= storage & migration ================= */
-var KEY = "momentum:v1", BUILD = "v36";
+var KEY = "momentum:v1", BUILD = "v37";
 var state = {
-  v:2, name:"", accent:"amber", mode:"night", onboarded:false,
+  v:2, name:"", accent:"amber", mode:"night", theme:"auto", onboarded:false,
   tasks:[], habits:[], goals:[], projects:[], areas:["Health","Work","Money","Learning","Home","People"],
   history:{}, oneThing:{}, journal:{}, inbox:[], notes:[], reviews:{}, focus:[], badges:{}, templates:[],
   lastActive:null, briefSeen:{}, totalDone:0, bestStreak:0, pomos:{}, nudges:false, dayStart:4,
@@ -475,6 +492,7 @@ function migrate(){
   state.tasks.forEach(function(t){ t.tags = t.tags || []; t.subs = t.subs || []; t.pri = t.pri || 0; t.notes = t.notes || ""; t.projectId = t.projectId || ""; t.goalId = t.goalId || ""; });
   state.habits.forEach(function(x){ x.log = x.log || {}; x.icon = x.icon || "✦"; if(x.days && !x.days.length) x.days = null; });
   state.goals.forEach(function(g){ g.miles = g.miles || []; g.notes = g.notes || []; g.shots = g.shots || []; g.log = g.log || []; g.area = g.area || ""; });
+  if(["auto","night","day"].indexOf(state.theme) < 0) state.theme = "auto";
   if(state.name) state.onboarded = true;
   // legacy pomos -> focus sessions (once)
   if(state.pomos && Object.keys(state.pomos).length && !state.focus.length){
@@ -525,10 +543,29 @@ var THEMES = {
   violet:["#B79CF0","rgba(183,156,240,.16)","rgba(183,156,240,.34)","#170F2A"],
   lime:["#C6E06B","rgba(198,224,107,.16)","rgba(198,224,107,.34)","#171C08"]
 };
+var sysLight = null;
+try{ sysLight = window.matchMedia("(prefers-color-scheme: light)"); }catch(e){}
+function dayActive(){
+  if(state.theme === "day") return true;
+  if(state.theme === "night") return false;
+  return !!(sysLight && sysLight.matches);
+}
 function applyTheme(){
-  var t = THEMES[state.accent] || THEMES.amber, r = document.documentElement;
-  r.style.setProperty("--amber", t[0]); r.style.setProperty("--amber-soft", t[1]); r.style.setProperty("--amber-line", t[2]); r.style.setProperty("--on-amber", t[3]);
+  var r = document.documentElement, day = dayActive();
+  r.setAttribute("data-theme", day ? "day" : "dark");
   r.setAttribute("data-mode", state.mode || "night");
+  if(day){
+    ["--amber","--amber-soft","--amber-line","--on-amber"].forEach(function(v){ r.style.removeProperty(v); });
+  } else {
+    var t = THEMES[state.accent] || THEMES.amber;
+    r.style.setProperty("--amber", t[0]); r.style.setProperty("--amber-soft", t[1]); r.style.setProperty("--amber-line", t[2]); r.style.setProperty("--on-amber", t[3]);
+  }
+  var mc = document.querySelector('meta[name="theme-color"]');
+  if(mc) mc.setAttribute("content", day ? "#F5F1E8" : "#12151F");
+}
+if(sysLight){
+  var onSys = function(){ if((state.theme||"auto") === "auto"){ applyTheme(); render(); } };
+  try{ sysLight.addEventListener("change", onSys); }catch(e){ try{ sysLight.addListener(onSys); }catch(e2){} }
 }
 
 /* ================= domain: tasks ================= */
@@ -2351,7 +2388,10 @@ function openSettings(){
   function paint(){
     w.querySelector(".sheet").innerHTML = '<div class="grab"></div><h2>Settings</h2>' +
       '<label class="fl"><span>What should Momentum call you?</span><input class="in" id="sname" maxlength="24" value="' + esc(state.name||"") + '"></label>' +
-      '<div class="sh"><b>Accent</b></div><div class="chips">' + Object.keys(THEMES).map(function(a){
+      '<div class="sh"><b>Theme</b></div><div class="chips">' + [["auto","Auto — follow phone"],["night","Night"],["day","Day"]].map(function(m){
+        return '<button class="chip" data-thm="' + m[0] + '" aria-pressed="' + ((state.theme||"auto")===m[0]) + '">' + m[1] + '</button>'; }).join("") + '</div>' +
+      '<p class="quiet" style="margin:-2px 0 10px">' + (state.theme==="auto" ? "Following your phone: " + (dayActive() ? "day right now." : "night right now.") : "Fixed — switch any time.") + '</p>' +
+      '<div class="sh"><b>Accent</b><span class="sp"></span><span>night themes</span></div><div class="chips">' + Object.keys(THEMES).map(function(a){
         return '<button class="chip" data-acc="' + a + '" aria-pressed="' + ((state.accent||"amber")===a) + '">' + a + '</button>'; }).join("") + '</div>' +
       '<div class="sh"><b>Darkness</b></div><div class="chips">' + [["night","Night"],["dim","Dim"],["midnight","Midnight"]].map(function(m){
         return '<button class="chip" data-mode="' + m[0] + '" aria-pressed="' + ((state.mode||"night")===m[0]) + '">' + m[1] + '</button>'; }).join("") + '</div>' +
@@ -2412,8 +2452,9 @@ function openSettings(){
       document.body.appendChild(inp); inp.click();
     };
     w.addEventListener("click", function(ev){
-      var b = ev.target.closest("[data-acc],[data-mode],[data-ds]"); if(!b) return;
+      var b = ev.target.closest("[data-acc],[data-mode],[data-ds],[data-thm]"); if(!b) return;
       var d = b.dataset;
+      if(d.thm){ state.theme = d.thm; }
       if(d.acc) state.accent = d.acc;
       if(d.mode) state.mode = d.mode;
       if(d.ds != null) state.dayStart = +d.ds;
